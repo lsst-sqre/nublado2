@@ -11,3 +11,5 @@ aiodns
 cchardet
 importlib_metadata
 click
+jupyterhub-kubespawner
+jupyterhub-tmpauthenticator

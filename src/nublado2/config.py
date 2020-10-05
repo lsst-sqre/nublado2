@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 def setup_config(c):
     logging.error(c)
+    c.JupyterHub.authenticator_class = "tmpauthenticator.TmpAuthenticator"
+    c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
 
 
 @dataclass
