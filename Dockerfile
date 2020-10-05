@@ -21,4 +21,6 @@ RUN useradd --create-home jovyan
 WORKDIR /home/jovyan
 
 USER jovyan
+EXPOSE 8000
+EXPOSE 8081
 ENTRYPOINT ["jupyterhub", "--config", "/nublado2/jupyterhub_config.py"]
