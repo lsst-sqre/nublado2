@@ -6,8 +6,10 @@ import logging
 import os
 from dataclasses import dataclass
 
+from jupyterhub.app import JupyterHub
 
-def setup_config(c):
+
+def setup_config(c: JupyterHub) -> None:
     logging.error(c)
     c.JupyterHub.authenticator_class = "tmpauthenticator.TmpAuthenticator"
     c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
