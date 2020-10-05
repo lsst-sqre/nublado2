@@ -1,14 +1,19 @@
-FROM jupyterhub/jupyterhub:1.2
+FROM jupyterhub/jupyterhub:1.2 as base-image
 
 # Update system packages
 COPY scripts/install-base-packages.sh .
 RUN ./install-base-packages.sh
 
+FROM base-image as dependencies-image
+
+# Install the app's Python runtime dependencies
+COPY requirements/main.txt ./requirements.txt
+RUN pip install --quiet --no-cache-dir -r requirements.txt
+
+FROM dependencies-image as runtime-image
+
 COPY . /nublado2
 WORKDIR /nublado2
-
-# Install the app's Python runtime dependencies, then the app.
-RUN pip install --quiet --no-cache-dir -r /nublado2/requirements/main.txt
 RUN pip install --no-cache-dir .
 
 # Create a non-root user to run the Hub.
