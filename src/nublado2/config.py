@@ -2,8 +2,13 @@
 
 __all__ = ["Configuration"]
 
+import logging
 import os
 from dataclasses import dataclass
+
+
+def setup_config(c):
+    logging.error(c)
 
 
 @dataclass
