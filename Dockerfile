@@ -12,15 +12,19 @@ RUN pip install --quiet --no-cache-dir -r requirements.txt
 
 FROM dependencies-image as runtime-image
 
+# Install the nublado2 python module
 COPY . /nublado2
 WORKDIR /nublado2
 RUN pip install --no-cache-dir .
 
-# Create a non-root user to run the Hub.
+# Place the config in the default location
+COPY jupyterhub_config.py /etc/jupyterhub/jupyterhub_config.py
+
+# Create a non-root user to run the Hub
 RUN useradd --create-home jovyan
 WORKDIR /home/jovyan
 
 USER jovyan
 EXPOSE 8000
 EXPOSE 8081
-ENTRYPOINT ["jupyterhub", "--config", "/nublado2/jupyterhub_config.py"]
+ENTRYPOINT ["jupyterhub", "--config", "/etc/jupyterhub/jupyterhub_config.py"]
