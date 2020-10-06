@@ -10,7 +10,7 @@ from jupyterhub.app import JupyterHub
 
 
 def setup_config(c: JupyterHub) -> None:
-    logging.error(c)
+    logging.info("Configuring JupyterHub Nublado2 style")
     c.JupyterHub.authenticator_class = "tmpauthenticator.TmpAuthenticator"
     c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
 
