@@ -14,6 +14,18 @@ def setup_config(c: JupyterHub) -> None:
     c.JupyterHub.authenticator_class = "tmpauthenticator.TmpAuthenticator"
     c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
 
+    # Point to the proxy pod, which is a k8s service for the proxy.
+    c.ConfigurableHTTPProxy.api_url = (
+        f"http://proxy-api:{os.environ['PROXY_API_SERVICE_PORT']}"
+    )
+    c.ConfigurableHTTPProxy.should_start = False
+
+    # Setup binding of the hub's network interface.
+    c.JupyterHub.hub_bind_url = "http://:8081"
+    c.JupyterHub.hub_connect_url = (
+        f"http://hub:{os.environ['HUB_SERVICE_PORT']}"
+    )
+
 
 @dataclass
 class Configuration:
