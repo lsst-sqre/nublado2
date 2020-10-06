@@ -187,12 +187,13 @@ jupyter-telemetry==0.1.0 \
     --hash=sha256:1de3e423b23aa40ca4a4238d65c56dda544061ff5aedc3f7647220ed7e3b9589 \
     --hash=sha256:445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314 \
     # via jupyterhub
+jupyterhub-dummyauthenticator==0.3.1 \
+    --hash=sha256:1be23aecd2745a5a24fb41e0bb2cab52f49a1f1e78204ca2c31bb43f486f982a \
+    --hash=sha256:de366d8f4bf3506c235f64843cd9d2987db482ad43a52c00a2173f3d8644e7ff \
+    # via -r requirements/main.in
 jupyterhub-kubespawner==0.14.0 \
     --hash=sha256:484dbbe837fe73d9ea9105f888b2afb5b1ca96f479d652e4996259c5c7555d5a \
     --hash=sha256:cd49edebc031058aab8e089ddb9c4c40fd5c2c1016c60e777b83a7f18b41150d \
-    # via -r requirements/main.in
-jupyterhub-tmpauthenticator==0.6 \
-    --hash=sha256:1438614e72583dc1c70464a37212e5faacbf3e43f72416c1113474deaf0f9d18 \
     # via -r requirements/main.in
 jupyterhub==1.1.0 \
     --hash=sha256:852a70225a03abd631b36a207f3ffdf69326a0db4cef539825fde39ec1b713d7 \

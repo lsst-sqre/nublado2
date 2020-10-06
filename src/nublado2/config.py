@@ -11,7 +11,7 @@ from jupyterhub.app import JupyterHub
 
 def setup_config(c: JupyterHub) -> None:
     logging.info("Configuring JupyterHub Nublado2 style")
-    c.JupyterHub.authenticator_class = "tmpauthenticator.TmpAuthenticator"
+    c.JupyterHub.authenticator_class = "dummyauthenticator.DummyAuthenticator"
     c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
 
     # Point to the proxy pod, which is a k8s service for the proxy.
