@@ -1,0 +1,15 @@
+jupyterhub:
+  hub:
+    image:
+      name: lsstsqre/nublado2
+      tag: dev
+      pullPolicy: Never
+
+  proxy:
+    secretToken: "3854245f5b48412ee9b7a2c985da6acdc146f80cc4f10eb175f0efa24530399b"
+    service:
+      type: ClusterIP
+
+  ingress:
+    enabled: true
+    hosts: ['minikube.lsst.codes']
