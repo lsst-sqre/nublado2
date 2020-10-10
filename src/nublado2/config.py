@@ -6,11 +6,22 @@ import logging
 import os
 from dataclasses import dataclass
 
+import yaml
 from jupyterhub.app import JupyterHub
 
 
+def get_config() -> dict:
+    with open("/etc/jupyterhub/hub_config.yaml") as f:
+        hub_config = yaml.load(f.read())
+
+    return hub_config
+
+
 def setup_config(c: JupyterHub) -> None:
-    logging.info("Configuring JupyterHub Nublado2 style")
+    logging.warning("Configuring JupyterHub Nublado2 style")
+
+    logging.warning("Hub Config is:\n%s", get_config())
+
     c.JupyterHub.authenticator_class = "dummyauthenticator.DummyAuthenticator"
     c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
 

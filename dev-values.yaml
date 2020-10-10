@@ -13,3 +13,6 @@ jupyterhub:
   ingress:
     enabled: true
     hosts: ['minikube.lsst.codes']
+
+nublado_config:
+  test1: test2
