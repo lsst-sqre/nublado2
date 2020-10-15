@@ -5,14 +5,15 @@ __all__ = ["Configuration"]
 import logging
 import os
 from dataclasses import dataclass
+from typing import Any, Dict
 
 import yaml
 from jupyterhub.app import JupyterHub
 
 
-def get_config() -> dict:
+def get_config() -> Dict[str, Any]:
     with open("/etc/jupyterhub/hub_config.yaml") as f:
-        hub_config = yaml.load(f.read())
+        hub_config = yaml.load(f.read(), yaml.FullLoader)
 
     return hub_config
 
