@@ -2,8 +2,39 @@
 
 __all__ = ["Configuration"]
 
+import logging
 import os
 from dataclasses import dataclass
+from typing import Any, Dict
+
+import yaml
+from jupyterhub.app import JupyterHub
+
+
+def get_config() -> Dict[str, Any]:
+    with open("/etc/jupyterhub/hub_config.yaml") as f:
+        hub_config = yaml.load(f.read(), yaml.FullLoader)
+
+    return hub_config
+
+
+def setup_config(c: JupyterHub) -> None:
+    logging.warning("Configuring JupyterHub Nublado2 style")
+
+    logging.warning("Hub Config is:\n%s", get_config())
+
+    c.JupyterHub.authenticator_class = "dummyauthenticator.DummyAuthenticator"
+    c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
+
+    # Point to the proxy pod, which is a k8s service for the proxy.
+    c.ConfigurableHTTPProxy.api_url = "http://proxy-api:8001"
+    c.ConfigurableHTTPProxy.should_start = False
+
+    # Setup binding of the hub's network interface, which points to the k8s
+    # service for the hub.
+    c.JupyterHub.base_url = "/n2"
+    c.JupyterHub.hub_bind_url = "http://:8081"
+    c.JupyterHub.hub_connect_url = "http://hub:8081"
 
 
 @dataclass
