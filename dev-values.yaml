@@ -14,5 +14,9 @@ jupyterhub:
     enabled: true
     hosts: ['minikube.lsst.codes']
 
-config:
-  test1: test2
+  extraConfig:
+    nublado.py: |
+      import nublado2.config
+      nublado2.config.setup_config(c)
+
+config: {}

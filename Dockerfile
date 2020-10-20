@@ -17,9 +17,6 @@ COPY . /app
 WORKDIR /app
 RUN pip install --no-cache-dir .
 
-# Place the config in the default location
-COPY jupyterhub_config.py /etc/jupyterhub/jupyterhub_config.py
-
 # Create a non-root user to run the Hub
 # Set the UID / GID to be 768.
 # Note this is also used in the nublado2's values.yaml
