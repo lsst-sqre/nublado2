@@ -5,6 +5,7 @@ __all__ = ["HubConfig"]
 from jupyterhub.app import JupyterHub
 from traitlets.config import LoggingConfigurable
 
+from .hooks import NubladoHooks
 from .nublado_config import NubladoConfig
 
 
@@ -30,6 +31,10 @@ class HubConfig(LoggingConfigurable):
         c.JupyterHub.base_url = "/n2"
         c.JupyterHub.hub_bind_url = "http://:8081"
         c.JupyterHub.hub_connect_url = "http://hub:8081"
+
+        # Setup hooks
+        hooks = NubladoHooks()
+        c.Spawner.pre_spawn_hook = hooks.pre_spawn
 
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
