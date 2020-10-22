@@ -11,6 +11,7 @@ aiodns
 cchardet
 importlib_metadata
 click
+jupyterhub
 jupyterhub-idle-culler
 jupyterhub-kubespawner
-jupyterhub-dummyauthenticator
+tornado

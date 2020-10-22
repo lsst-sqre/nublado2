@@ -188,10 +188,6 @@ jupyter-telemetry==0.1.0 \
     --hash=sha256:1de3e423b23aa40ca4a4238d65c56dda544061ff5aedc3f7647220ed7e3b9589 \
     --hash=sha256:445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314 \
     # via jupyterhub
-jupyterhub-dummyauthenticator==0.3.1 \
-    --hash=sha256:1be23aecd2745a5a24fb41e0bb2cab52f49a1f1e78204ca2c31bb43f486f982a \
-    --hash=sha256:de366d8f4bf3506c235f64843cd9d2987db482ad43a52c00a2173f3d8644e7ff \
-    # via -r requirements/main.in
 jupyterhub-idle-culler==1.0 \
     --hash=sha256:d9e58baa48cba6a79b83c43d8dcab7b758a66c2c4a9bc8394f7b43e03d891621 \
     # via -r requirements/main.in
@@ -202,7 +198,7 @@ jupyterhub-kubespawner==0.14.0 \
 jupyterhub==1.1.0 \
     --hash=sha256:852a70225a03abd631b36a207f3ffdf69326a0db4cef539825fde39ec1b713d7 \
     --hash=sha256:a515a22fe1e66e1a08d2e4ecb9b5fe47ed024cddfbc657ad15f448ac3bf409ca \
-    # via jupyterhub-kubespawner
+    # via -r requirements/main.in, jupyterhub-kubespawner
 kubernetes==12.0.0 \
     --hash=sha256:72f095a1cd593401ff26b3b8d71749340394ca6d8413770ea28ce18efd5bcf4c \
     --hash=sha256:9a339a32d6c79e6461cb6050c3662cb4e33058b508d8d34ee5d5206add395828 \
@@ -463,7 +459,7 @@ tornado==6.0.4 \
     --hash=sha256:c58d56003daf1b616336781b26d184023ea4af13ae143d9dda65e31e534940b9 \
     --hash=sha256:c952975c8ba74f546ae6de2e226ab3cc3cc11ae47baf607459a6728585bb542a \
     --hash=sha256:c98232a3ac391f5faea6821b53db8db461157baa788f5d6222a193e9456e1740 \
-    # via jupyterhub, jupyterhub-idle-culler
+    # via -r requirements/main.in, jupyterhub, jupyterhub-idle-culler
 traitlets==5.0.5 \
     --hash=sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396 \
     --hash=sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426 \
