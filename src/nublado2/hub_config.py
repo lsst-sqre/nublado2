@@ -17,20 +17,7 @@ class HubConfig(LoggingConfigurable):
         nc = NubladoConfig().get()
         self.log.debug(f"Nublado Config is:\n{nc}")
 
-        c.JupyterHub.authenticator_class = (
-            "dummyauthenticator.DummyAuthenticator"
-        )
         c.JupyterHub.spawner_class = "kubespawner.KubeSpawner"
-
-        # Point to the proxy pod, which is a k8s service for the proxy.
-        c.ConfigurableHTTPProxy.api_url = "http://proxy-api:8001"
-        c.ConfigurableHTTPProxy.should_start = False
-
-        # Setup binding of the hub's network interface, which points to the k8s
-        # service for the hub.
-        c.JupyterHub.base_url = "/n2"
-        c.JupyterHub.hub_bind_url = "http://:8081"
-        c.JupyterHub.hub_connect_url = "http://hub:8081"
 
         # Setup hooks
         hooks = NubladoHooks()
