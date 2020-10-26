@@ -22,14 +22,34 @@ class GafaelfawrAuthenticator(Authenticator):
     """JupyterHub authenticator using Gafaelfawr headers.
 
     Rather than implement any authentication logic inside of JupyterHub,
-    authentication is done via an ``auth_request`` handler at the NGINX
-    level.  JupyterHub then only needs to read the authentication results from
-    the headers of the incoming request.
+    authentication is done via an ``auth_request`` handler made by the NGINX
+    ingress controller.  JupyterHub then only needs to read the authentication
+    results from the headers of the incoming request.
 
-    To support this, register a custom login handler that will parse the
-    headers and enable ``auto_login``.  ``authenticate``, which handles the
-    results of a form submission to the normal ``/login`` route, is not used
-    in this model.
+    Normally, the authentication flow for JupyterHub is to send the user to
+    ``/hub/login`` and display a login form.  The submitted values to the form
+    are then passed to the ``authenticate`` method of the authenticator, which
+    is responsible for returning authentication information for the user.
+    That information is then stored in an authentication session and the user
+    is redirected to whatever page they were trying to go to.
+
+    We however do not want to display an interactive form, since the
+    authentication information is already present in the headers.  We just
+    need JupyterHub to read it.
+
+    The documented way to do this is to register a custom login handler on a
+    new route not otherwise used by JupyterHub, and then enable the
+    ``auto_login`` setting on the configured authenticator.  This setting
+    tells the built-in login page to, instead of presenting a login form,
+    redirect the user to whatever URL is returned by ``login_url``.  In our
+    case, this will be ``/hub/gafaelfawr/login``, served by the
+    `GafaelfawrLoginHandler` defined below.  This simple handler will read the
+    headers, create the session and cookie, and then make the same redirect
+    call the login form handler would normally have made after the
+    ``authenticate`` method returned.
+
+    In this model, the ``authenticate`` method is not used, since the login
+    handler never receives a form submission.
 
     Notes
     -----
@@ -37,12 +57,15 @@ class GafaelfawrAuthenticator(Authenticator):
     JupyterHub code would be to not override ``login_url``, set
     ``auto_login``, and then override ``get_authenticated_user`` in the
     authenticator to read authentication information directly from the request
-    headers.  This would avoid a redirect and the code appears to be there to
-    support it, but the current documentation (as of 1.1.0) explicitly says to
-    not override ``get_authenticated_user``.
+    headers.  It looks like an authenticator configured in that way would
+    authenticate the user "in place" in the handler of whatever page the user
+    first went to, without any redirects.  This would be slightly more
+    efficient and the code appears to handle it, but the current documentation
+    (as of 1.1.0) explicitly says to not override ``get_authenticated_user``.
 
-    This implementation therefore takes the well-documented path on the theory
-    that an extra redirect is a small price to pay for staying within the
+    This implementation therefore takes the well-documented path of a new
+    handler and a redirect from the built-in login handler, on the theory that
+    a few extra redirects is a small price to pay for staying within the
     supported and expected interface.
     """
 
@@ -122,5 +145,8 @@ class GafaelfawrLoginHandler(BaseHandler):
         # Tell JupyterHub to set its login cookie (also undocumented).
         self.set_login_cookie(user)
 
-        # Redirect to the next URL.
+        # Redirect to the next URL, which is under the control of JupyterHub
+        # and opaque to the authenticator.  In practice, it will normally be
+        # whatever URL the user was trying to go to when JupyterHub decided
+        # they needed to be authenticated.
         self.redirect(self.get_next_url(user))
