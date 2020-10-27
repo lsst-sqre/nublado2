@@ -23,6 +23,8 @@ class HubConfig(LoggingConfigurable):
         hooks = NubladoHooks()
         c.Spawner.pre_spawn_hook = hooks.pre_spawn
         c.Spawner.post_stop_hook = hooks.post_stop
+        c.Spawner.options_form = hooks.show_options
+        c.Spawner.options_from_form = hooks.get_options
 
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
