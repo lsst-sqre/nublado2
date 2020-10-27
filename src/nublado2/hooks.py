@@ -1,7 +1,7 @@
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
-from .resourcemgr import ResourceManager
+from nublado2.resourcemgr import ResourceManager
 
 
 class NubladoHooks(LoggingConfigurable):

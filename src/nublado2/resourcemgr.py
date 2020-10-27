@@ -3,7 +3,7 @@ from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from traitlets.config import LoggingConfigurable
 
-from .nublado_config import NubladoConfig
+from nublado2.nublado_config import NubladoConfig
 
 config.load_incluster_config()
 
@@ -22,7 +22,7 @@ class ResourceManager(LoggingConfigurable):
         resources = NubladoConfig().get().get("user_resources", [])
         for r in resources:
             templated_yaml = yaml.dump(r).format(**template_values)
-            templated_resource = yaml.load(templated_yaml, yaml.FullLoader)
+            templated_resource = yaml.load(templated_yaml, yaml.SafeLoader)
             self.log.debug(f"Creating resource:\n{templated_yaml}")
             create_from_dict(self.k8s_api, templated_resource)
 
