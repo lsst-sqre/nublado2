@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
     from jupyterhub.app import JupyterHub
+    from tornado.httputil import HTTPHeaders
     from tornado.web import RequestHandler
 
     Route = Tuple[str, Type[BaseHandler]]
@@ -115,26 +116,7 @@ class GafaelfawrLoginHandler(BaseHandler):
 
     async def get(self) -> None:
         """Handle GET to the login page."""
-        username = self.request.headers.get("X-Auth-Request-User")
-        if not username:
-            raise web.HTTPError(401)
-
-        # Construct an auth_info structure with the additional details about
-        # the user.
-        groups_str = self.request.headers.get("X-Auth-Request-Groups")
-        if groups_str:
-            groups = [g.strip() for g in groups_str.split(",")]
-        else:
-            groups = []
-        uid = self.request.headers.get("X-Auth-Request-Uid")
-        auth_info = {
-            "name": username,
-            "auth_state": {
-                "uid": int(uid) if uid else None,
-                "token": self.request.headers.get("X-Auth-Request-Token"),
-                "groups": groups,
-            },
-        }
+        auth_info = self._build_auth_info(self.request.headers)
 
         # Store the ancillary user information in the user database and create
         # or return the user object.  This call is unfortunately undocumented,
@@ -150,3 +132,32 @@ class GafaelfawrLoginHandler(BaseHandler):
         # whatever URL the user was trying to go to when JupyterHub decided
         # they needed to be authenticated.
         self.redirect(self.get_next_url(user))
+
+    @staticmethod
+    def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
+        """Construct the authentication information for a user.
+
+        Analyze the headers of the request and build an auth info dict in the
+        format expected by JupyterHub.  This is in a separate method so that
+        it can be unit-tested.
+        """
+        username = headers.get("X-Auth-Request-User")
+        if not username:
+            raise web.HTTPError(401)
+
+        # Construct an auth_info structure with the additional details about
+        # the user.
+        groups_str = headers.get("X-Auth-Request-Groups")
+        if groups_str:
+            groups = [g.strip() for g in groups_str.split(",")]
+        else:
+            groups = []
+        uid = headers.get("X-Auth-Request-Uid")
+        return {
+            "name": username,
+            "auth_state": {
+                "uid": int(uid) if uid else None,
+                "token": headers.get("X-Auth-Request-Token"),
+                "groups": groups,
+            },
+        }
