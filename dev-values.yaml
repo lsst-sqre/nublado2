@@ -28,4 +28,9 @@ jupyterhub:
       nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes:31337/login"
       nginx.ingress.kubernetes.io/auth-url: "https://minikube.lsst.codes:31337/auth?scope=exec:notebook"
 
-config: {}
+config:
+  user_resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{user}"

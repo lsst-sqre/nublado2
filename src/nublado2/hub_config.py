@@ -22,6 +22,7 @@ class HubConfig(LoggingConfigurable):
         # Setup hooks
         hooks = NubladoHooks()
         c.Spawner.pre_spawn_hook = hooks.pre_spawn
+        c.Spawner.post_stop_hook = hooks.post_stop
 
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
