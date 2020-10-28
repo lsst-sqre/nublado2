@@ -26,7 +26,7 @@ jupyterhub:
     hosts: ["minikube.lsst.codes"]
     annotations:
       nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes:31337/login"
-      nginx.ingress.kubernetes.io/auth-url: "https://minikube.lsst.codes:31337/auth?scope=exec:notebook"
+      nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr-service.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook"
 
 config:
   user_resources:
