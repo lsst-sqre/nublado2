@@ -27,10 +27,3 @@ class NubladoHooks(LoggingConfigurable):
         user = spawner.user.name
         self.log.debug(f"Show options hook called for {user}")
         return self.optionsform.show_options_form(spawner)
-
-    def get_options(self, spawner: Spawner, formdata):
-        user = spawner.user.name
-        self.log.debug(
-            f"Get options hook called for {user} with data {formdata}"
-        )
-        return formdata
