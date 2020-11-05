@@ -16,7 +16,7 @@ class NubladoConfig(LoggingConfigurable):
         self.log.debug(f"Loaded Nublado Config:\n{nc}")
         return nc
 
-    def lookup_size(self, name) -> Tuple[float, str]:
+    def lookup_size(self, name: str) -> Tuple[float, str]:
         sizes = self.get()["options_form"]["sizes"]
 
         for s in sizes:
@@ -25,7 +25,7 @@ class NubladoConfig(LoggingConfigurable):
 
         raise ValueError(f"Size {name} not found")
 
-    def lookup_image_url(self, name) -> str:
+    def lookup_image_url(self, name: str) -> str:
         images = self.get()["options_form"]["images"]
 
         for i in images:

@@ -1,4 +1,5 @@
 from jinja2 import Template
+from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
 from nublado2.nublado_config import NubladoConfig
@@ -52,7 +53,7 @@ options_template = Template(
 
 
 class NubladoOptions(LoggingConfigurable):
-    def show_options_form(self, spawner) -> str:
+    def show_options_form(self, spawner: Spawner) -> str:
         options_config = NubladoConfig().get()["options_form"]
         images = options_config["images"]
         sizes = options_config["sizes"]

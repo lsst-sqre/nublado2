@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from kubespawner import KubeSpawner
 
 
@@ -8,7 +10,7 @@ class NubladoSpawner(KubeSpawner):
     so it must be subclassed.
     """
 
-    def options_from_form(self, formdata):
+    def options_from_form(self, formdata: Dict[str, Any]) -> Dict[str, Any]:
         """
         This gets the options returned from the options form.
         This returned data is passed to the pre_spawn_hook as the options
