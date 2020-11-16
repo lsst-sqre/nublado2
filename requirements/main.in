@@ -16,5 +16,6 @@ aiodns
 cchardet
 importlib_metadata
 click
+jinja2
 jupyterhub-idle-culler
 jupyterhub-kubespawner
