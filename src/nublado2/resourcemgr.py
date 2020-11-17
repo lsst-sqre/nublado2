@@ -26,8 +26,5 @@ class ResourceManager(LoggingConfigurable):
             self.log.debug(f"Creating resource:\n{templated_yaml}")
             create_from_dict(self.k8s_api, templated_resource)
 
-    def delete_user_resources(self, user: str) -> None:
-        # TODO: the namespace should probably be cleaned up by the
-        # multinamespace kubespawner, but this is how to delete the
-        # namespace this way.  We might not even have to fill in this hook.
-        self.k8s_client.delete_namespace(name=user)
+    def delete_user_resources(self, namespace: str) -> None:
+        self.k8s_client.delete_namespace(name=namespace)

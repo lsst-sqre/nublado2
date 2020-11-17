@@ -18,4 +18,4 @@ importlib_metadata
 click
 jinja2
 jupyterhub-idle-culler
-jupyterhub-kubespawner
+https://github.com/lsst-sqre/kubespawner/archive/108dc782d26e28c633fd4ae229c8d70f60c37e2d.zip
