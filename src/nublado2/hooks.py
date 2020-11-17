@@ -39,7 +39,7 @@ class NubladoHooks(LoggingConfigurable):
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name
         self.log.debug(f"Post stop-hook called for {user}")
-        self.resourcemgr.delete_user_resources(user)
+        self.resourcemgr.delete_user_resources(spawner.namespace)
 
     def show_options(self, spawner: Spawner) -> str:
         user = spawner.user.name
