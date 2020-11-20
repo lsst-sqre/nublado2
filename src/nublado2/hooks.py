@@ -29,7 +29,7 @@ class NubladoHooks(LoggingConfigurable):
         # This will help set up the created lab pod.
         nc = NubladoConfig()
         (cpu, ram) = nc.lookup_size(size_name)
-        spawner.image = nc.lookup_image_url(image_name)
+        spawner.image = image_name
         spawner.debug = options.get("debug_enabled", False)
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu
@@ -41,7 +41,7 @@ class NubladoHooks(LoggingConfigurable):
         self.log.debug(f"Post stop-hook called for {user}")
         self.resourcemgr.delete_user_resources(spawner.namespace)
 
-    def show_options(self, spawner: Spawner) -> str:
+    async def show_options(self, spawner: Spawner) -> str:
         user = spawner.user.name
         self.log.debug(f"Show options hook called for {user}")
-        return self.optionsform.show_options_form(spawner)
+        return await self.optionsform.show_options_form(spawner)

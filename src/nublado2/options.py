@@ -1,3 +1,6 @@
+from typing import Dict, List
+
+from aiohttp import ClientSession
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
@@ -25,7 +28,7 @@ options_template = Template(
 <td width="50%">
 {% for i in images %}
     <input type="radio" name="image"
-     id="{{ i.name }}" value="{{ i.name }}"
+     id="{{ i.name }}" value="{{ i.image_url }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.name }}<br />
@@ -51,10 +54,29 @@ options_template = Template(
 """
 )
 
+# Don't have this be a member of NubladoOptions, we should
+# share this connection pool.  Also the LoggingConfigurable
+# will try to pickle it to json, and it can't pickle a session.
+session = ClientSession()
+
 
 class NubladoOptions(LoggingConfigurable):
-    def show_options_form(self, spawner: Spawner) -> str:
+    async def show_options_form(self, spawner: Spawner) -> str:
         options_config = NubladoConfig().get()["options_form"]
-        images = options_config["images"]
         sizes = options_config["sizes"]
+
+        images_url = options_config.get("images_url", "")
+        images = await self._get_images_from_url(images_url)
+        images.extend(options_config["images"])
+
         return options_template.render(images=images, sizes=sizes)
+
+    async def _get_images_from_url(self, url: str) -> List[Dict[str, str]]:
+        if not url:
+            return []
+
+        async with session.get(url) as r:
+            if r.status != 200:
+                raise Exception(f"Error {r.status} from {url}")
+
+            return await r.json()

@@ -34,13 +34,8 @@ jupyterhub:
 
 config:
   options_form:
+    images_url: "http://cachemachine-dev.cachemachine-dev.svc.cluster.local/cachemachine/jupyter/available"
     images:
-      - name: Recommended
-        image: registry.hub.docker.com/jupyterhub/k8s-singleuser-sample:0.9.0-n358.h11c2aeb8
-      - name: Weekly 44
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_44
-      - name: Weekly 43
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_43
       - name: Weekly 42
         image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
     sizes:
