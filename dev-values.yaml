@@ -37,7 +37,7 @@ config:
     images_url: "http://cachemachine-dev.cachemachine-dev.svc.cluster.local/cachemachine/jupyter/available"
     images:
       - name: Weekly 42
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
+        image_url: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
     sizes:
       - name: Tiny
         cpu: .5

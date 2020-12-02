@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from aiohttp import ClientSession
 from jinja2 import Template
@@ -65,18 +65,20 @@ class NubladoOptions(LoggingConfigurable):
         options_config = NubladoConfig().get()["options_form"]
         sizes = options_config["sizes"]
 
-        images_url = options_config.get("images_url", "")
+        images_url = options_config.get("images_url")
         images = await self._get_images_from_url(images_url)
         images.extend(options_config["images"])
 
         return options_template.render(images=images, sizes=sizes)
 
-    async def _get_images_from_url(self, url: str) -> List[Dict[str, str]]:
+    async def _get_images_from_url(
+        self, url: Optional[str]
+    ) -> List[Dict[str, str]]:
         if not url:
             return []
 
-        async with session.get(url) as r:
-            if r.status != 200:
-                raise Exception(f"Error {r.status} from {url}")
+        r = await session.get(url)
+        if r.status != 200:
+            raise Exception(f"Error {r.status} from {url}")
 
-            return await r.json()
+        return await r.json()
