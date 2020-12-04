@@ -17,15 +17,6 @@ jupyterhub:
     storage:
       type: none
 
-  auth:
-    state:
-      cryptoKey: "080c6d0eb8d9f84ef5f0860bea71dba6ab2e1be712c7bc8c2eaf92321c9fd968"
-
-  proxy:
-    secretToken: "3854245f5b48412ee9b7a2c985da6acdc146f80cc4f10eb175f0efa24530399b"
-    service:
-      type: ClusterIP
-
   ingress:
     hosts: ["minikube.lsst.codes"]
     annotations:
@@ -34,15 +25,10 @@ jupyterhub:
 
 config:
   options_form:
+    images_url: "http://cachemachine-dev.cachemachine-dev.svc.cluster.local/cachemachine/jupyter/available"
     images:
-      - name: Recommended
-        image: registry.hub.docker.com/jupyterhub/k8s-singleuser-sample:0.9.0-n358.h11c2aeb8
-      - name: Weekly 44
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_44
-      - name: Weekly 43
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_43
       - name: Weekly 42
-        image: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
+        image_url: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
     sizes:
       - name: Tiny
         cpu: .5
@@ -57,3 +43,5 @@ config:
         cpu: 4
         ram: 12288M
   user_resources: {}
+
+vault_secret_path: "secret/k8s_operator/minikube.lsst.codes/nublado2"

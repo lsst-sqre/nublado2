@@ -24,12 +24,3 @@ class NubladoConfig(LoggingConfigurable):
                 return (float(s["cpu"]), s["ram"])
 
         raise ValueError(f"Size {name} not found")
-
-    def lookup_image_url(self, name: str) -> str:
-        images = self.get()["options_form"]["images"]
-
-        for i in images:
-            if i["name"] == name:
-                return i["image"]
-
-        raise ValueError(f"Image url for {name} not found")
