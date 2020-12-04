@@ -17,15 +17,6 @@ jupyterhub:
     storage:
       type: none
 
-  auth:
-    state:
-      cryptoKey: "080c6d0eb8d9f84ef5f0860bea71dba6ab2e1be712c7bc8c2eaf92321c9fd968"
-
-  proxy:
-    secretToken: "3854245f5b48412ee9b7a2c985da6acdc146f80cc4f10eb175f0efa24530399b"
-    service:
-      type: ClusterIP
-
   ingress:
     hosts: ["minikube.lsst.codes"]
     annotations:
@@ -52,3 +43,5 @@ config:
         cpu: 4
         ram: 12288M
   user_resources: {}
+
+vault_secret_path: "secret/k8s_operator/minikube.lsst.codes/nublado2"
