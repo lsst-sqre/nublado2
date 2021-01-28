@@ -20,13 +20,13 @@ class HubConfig(LoggingConfigurable):
         self.log.debug(f"Nublado Config is:\n{nc}")
 
         c.JupyterHub.hub_connect_url = self._get_hub_connect_url()
-        c.JupyterHub.spawner_class = "nublado2.spawner.NubladoSpawner"
 
         # Setup hooks
         hooks = NubladoHooks()
         c.Spawner.pre_spawn_hook = hooks.pre_spawn
         c.Spawner.post_stop_hook = hooks.post_stop
         c.Spawner.options_form = hooks.show_options
+        c.Spawner.options_from_form = hooks.options_from_form
 
         c.KubeSpawner.enable_user_namespaces = True
 
