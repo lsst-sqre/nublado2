@@ -13,7 +13,7 @@ class NubladoHooks(LoggingConfigurable):
         self.resourcemgr = ResourceManager()
         self.optionsform = NubladoOptions()
 
-    def pre_spawn(self, spawner: Spawner) -> None:
+    async def pre_spawn(self, spawner: Spawner) -> None:
         user = spawner.user.name
         options = spawner.user_options
         self.log.debug(
@@ -36,7 +36,7 @@ class NubladoHooks(LoggingConfigurable):
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu
 
-        self.resourcemgr.create_user_resources(user)
+        await self.resourcemgr.create_user_resources(spawner.user)
 
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name

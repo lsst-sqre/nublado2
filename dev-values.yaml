@@ -46,12 +46,12 @@ config:
     - apiVersion: v1
       kind: Namespace
       metadata:
-        name: "n2-dev-{user}"
+        name: "n2-dev-{{user}}"
     - apiVersion: v1
       kind: ConfigMap
       metadata:
         name: lab-environment
-        namespace: "n2-dev-{user}"
+        namespace: "n2-dev-{{user}}"
       data:
         EXTERNAL_INSTANCE_URL: https://minikube.lsst.codes
         FIREFLY_ROUTE: /portal/app
@@ -62,5 +62,8 @@ config:
         SODA_ROUTE: /api/image/soda
         WORKFLOW_ROUTE: /wf
         AUTO_REPO_URLS: https://github.com/lsst-sqre/notebook-demo
+        EXTERNAL_GROUPS: "{{groups}}"
+        EXTERNAL_UID: "{{uid}}"
+        ACCESS_TOKEN: "{{token}}"
 
 vault_secret_path: "secret/k8s_operator/minikube.lsst.codes/nublado2"
