@@ -30,6 +30,15 @@ class HubConfig(LoggingConfigurable):
 
         c.KubeSpawner.enable_user_namespaces = True
 
+        # This is put in the lab pod, and tells kubernetes to
+        # use all the key: values found in the lab-environment
+        # configmap as environment variables for the lab
+        # container.  This configmap is in the user namespace
+        # and defined in nublado yaml's user_resources section.
+        c.KubeSpawner.extra_container_config = {
+            "envFrom": [{"configMapRef": {"name": "lab-environment"}}]
+        }
+
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
 
