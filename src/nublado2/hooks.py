@@ -36,6 +36,11 @@ class NubladoHooks(LoggingConfigurable):
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu
 
+        auth_state = await spawner.user.get_auth_state()
+
+        if nc.use_auth_uid():
+            spawner.uid = auth_state["uid"]
+
         await self.resourcemgr.create_user_resources(spawner.user)
 
     def post_stop(self, spawner: Spawner) -> None:
