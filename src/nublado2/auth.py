@@ -9,6 +9,9 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 
+from nublado2.nublado_config import NubladoConfig
+from nublado2.options import session
+
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
@@ -45,9 +48,9 @@ class GafaelfawrAuthenticator(Authenticator):
     redirect the user to whatever URL is returned by ``login_url``.  In our
     case, this will be ``/hub/gafaelfawr/login``, served by the
     `GafaelfawrLoginHandler` defined below.  This simple handler will read the
-    headers, create the session and cookie, and then make the same redirect
-    call the login form handler would normally have made after the
-    ``authenticate`` method returned.
+    token from the header, retrieve its metadata, create the session and
+    cookie, and then make the same redirect call the login form handler would
+    normally have made after the ``authenticate`` method returned.
 
     In this model, the ``authenticate`` method is not used, since the login
     handler never receives a form submission.
@@ -110,13 +113,14 @@ class GafaelfawrAuthenticator(Authenticator):
 class GafaelfawrLoginHandler(BaseHandler):
     """Login handler for Gafaelfawr authentication.
 
-    This retrieves authentication information from the headers, constructs an
-    authentication state, and then redirects to the next URL.
+    This retrieves the authentication token from the headers, makes an API
+    call to get its metadata, constructs an authentication state, and then
+    redirects to the next URL.
     """
 
     async def get(self) -> None:
         """Handle GET to the login page."""
-        auth_info = self._build_auth_info(self.request.headers)
+        auth_info = await self._build_auth_info(self.request.headers)
 
         # Store the ancillary user information in the user database and create
         # or return the user object.  This call is unfortunately undocumented,
@@ -134,30 +138,49 @@ class GafaelfawrLoginHandler(BaseHandler):
         self.redirect(self.get_next_url(user))
 
     @staticmethod
-    def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
+    async def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
         """Construct the authentication information for a user.
 
-        Analyze the headers of the request and build an auth info dict in the
-        format expected by JupyterHub.  This is in a separate method so that
-        it can be unit-tested.
+        Retrieve the token from the headers, use that token to retrieve the
+        metadata for the token, and use that data to build an auth info dict
+        in the format expected by JupyterHub.  This is in a separate method so
+        that it can be unit-tested.
         """
-        username = headers.get("X-Auth-Request-User")
-        if not username:
-            raise web.HTTPError(401)
+        token = headers.get("X-Auth-Request-Token")
+        if not token:
+            raise web.HTTPError(401, "No request token")
+
+        # Retrieve the token metadata.
+        base_url = NubladoConfig().get().get("base_url")
+        if not base_url:
+            raise web.HTTPError(500, "base_url not set in configuration")
+        api_url = url_path_join(base_url, "/auth/analyze")
+        resp = await session.post(api_url, data={"token": token})
+        if resp.status != 200:
+            raise web.HTTPError(500, "Cannot reach token analysis API")
+        try:
+            analyze_data = await resp.json()
+            valid = analyze_data["token"]["valid"]
+            token_data = analyze_data["token"].get("data")
+        except Exception:
+            raise web.HTTPError(500, "Cannot analyze token")
+        if not valid or not token_data or "uid" not in token_data:
+            raise web.HTTPError(403, "Request token is invalid")
 
         # Construct an auth_info structure with the additional details about
         # the user.
-        groups_str = headers.get("X-Auth-Request-Groups")
-        if groups_str:
-            groups = [g.strip() for g in groups_str.split(",")]
-        else:
-            groups = []
-        uid = headers.get("X-Auth-Request-Uid")
+        uid = token_data.get("uidNumber")
+        try:
+            groups = [g["name"] for g in token_data.get("isMemberOf", [])]
+            gids = [int(g["id"]) for g in token_data.get("isMemberOf", [])]
+        except Exception:
+            raise web.HTTPError(403, "Token data is not in a valid format")
         return {
-            "name": username,
+            "name": token_data["uid"],
             "auth_state": {
                 "uid": int(uid) if uid else None,
-                "token": headers.get("X-Auth-Request-Token"),
+                "token": token,
                 "groups": groups,
+                "gids": gids,
             },
         }
