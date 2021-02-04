@@ -24,3 +24,6 @@ class NubladoConfig(LoggingConfigurable):
                 return (float(s["cpu"]), s["ram"])
 
         raise ValueError(f"Size {name} not found")
+
+    def use_auth_uid(self) -> bool:
+        return self.get().get("use_auth_uid", True)

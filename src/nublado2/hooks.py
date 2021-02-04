@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
@@ -11,7 +13,7 @@ class NubladoHooks(LoggingConfigurable):
         self.resourcemgr = ResourceManager()
         self.optionsform = NubladoOptions()
 
-    def pre_spawn(self, spawner: Spawner) -> None:
+    async def pre_spawn(self, spawner: Spawner) -> None:
         user = spawner.user.name
         options = spawner.user_options
         self.log.debug(
@@ -34,7 +36,12 @@ class NubladoHooks(LoggingConfigurable):
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu
 
-        self.resourcemgr.create_user_resources(user)
+        auth_state = await spawner.user.get_auth_state()
+
+        if nc.use_auth_uid():
+            spawner.uid = auth_state["uid"]
+
+        await self.resourcemgr.create_user_resources(spawner.user)
 
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name
@@ -45,3 +52,12 @@ class NubladoHooks(LoggingConfigurable):
         user = spawner.user.name
         self.log.debug(f"Show options hook called for {user}")
         return await self.optionsform.show_options_form(spawner)
+
+    def options_from_form(self, formdata: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        This gets the options returned from the options form.
+        This returned data is passed to the pre_spawn_hook as the options
+        argument.
+        """
+        self.log.debug(f"Options_from_form with data {formdata}")
+        return formdata

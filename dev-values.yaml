@@ -16,19 +16,25 @@ jupyterhub:
   singleuser:
     storage:
       type: none
+    extraVolumes:
+      - name: home
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: home
+        mountPath: /home
+
 
   ingress:
     hosts: ["minikube.lsst.codes"]
     annotations:
-      nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes:31337/login"
+      nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes/login"
       nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr-service.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook"
 
 config:
+  base_url: "https://minikube.lsst.codes/"
   options_form:
-    images_url: "http://cachemachine-dev.cachemachine-dev.svc.cluster.local/cachemachine/jupyter/available"
-    images:
-      - name: Weekly 42
-        image_url: registry.hub.docker.com/lsstsqre/sciplat-lab:w_2020_42
+    images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
+    images: []
     sizes:
       - name: Tiny
         cpu: .5
@@ -42,6 +48,30 @@ config:
       - name: Large
         cpu: 4
         ram: 12288M
-  user_resources: {}
+  use_auth_uid: False
+  user_resources:
+    - apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "n2-dev-{{user}}"
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: lab-environment
+        namespace: "n2-dev-{{user}}"
+      data:
+        EXTERNAL_INSTANCE_URL: "{{base_url}}"
+        FIREFLY_ROUTE: /portal/app
+        HUB_ROUTE: /n2
+        JS9_ROUTE: /js9
+        API_ROUTE: /api
+        TAP_ROUTE: /api/tap
+        SODA_ROUTE: /api/image/soda
+        WORKFLOW_ROUTE: /wf
+        AUTO_REPO_URLS: https://github.com/lsst-sqre/notebook-demo
+        NO_SUDO: "true"
+        EXTERNAL_GROUPS: "{{groups}}"
+        EXTERNAL_UID: "{{uid}}"
+        ACCESS_TOKEN: "{{token}}"
 
 vault_secret_path: "secret/k8s_operator/minikube.lsst.codes/nublado2"
