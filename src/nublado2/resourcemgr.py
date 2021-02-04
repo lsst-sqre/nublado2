@@ -32,6 +32,7 @@ class ResourceManager(LoggingConfigurable):
                 "uid": auth_state["uid"],
                 "token": auth_state["token"],
                 "groups": ",".join(auth_state["groups"]),
+                "base_url": NubladoConfig().get().get("base_url"),
             }
 
             self.log.debug(f"Template values={template_values}")

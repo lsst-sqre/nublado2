@@ -31,6 +31,7 @@ jupyterhub:
       nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr-service.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook"
 
 config:
+  base_url: "https://minikube.lsst.codes/"
   options_form:
     images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
     images: []
@@ -59,7 +60,7 @@ config:
         name: lab-environment
         namespace: "n2-dev-{{user}}"
       data:
-        EXTERNAL_INSTANCE_URL: https://minikube.lsst.codes
+        EXTERNAL_INSTANCE_URL: "{{base_url}}"
         FIREFLY_ROUTE: /portal/app
         HUB_ROUTE: /n2
         JS9_ROUTE: /js9
