@@ -537,7 +537,9 @@ ruamel.yaml.clib==0.2.2 \
     --hash=sha256:daf21aa33ee9b351f66deed30a3d450ab55c14242cfdfcd377798e2c0d25c9f1 \
     --hash=sha256:e9f7d1d8c26a6a12c23421061f9022bb62704e38211fe375c645485f38df34a2 \
     --hash=sha256:f6061a31880c1ed6b6ce341215336e2f3d0c1deccd84957b6fa8ca474b41e89f
-    # via -r requirements/dev.in
+    # via
+    #   -r requirements/dev.in
+    #   ruamel.yaml
 ruamel.yaml==0.16.12 \
     --hash=sha256:012b9470a0ea06e4e44e99e7920277edf6b46eee0232a04487ea73a7386340a5 \
     --hash=sha256:076cc0bc34f1966d920a49f18b52b6ad559fbe656a0748e3535cf7b3f29ebf9e
