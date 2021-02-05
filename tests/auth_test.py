@@ -127,8 +127,32 @@ async def test_login_handler() -> None:
         # Check invalid format of isMemberOf.
         with aioresponses() as m:
             handler = build_handler(
-                {"uid": "bar", "isMemberOf": [{"group": "foo"}]}
+                {"uid": "bar", "isMemberOf": [{"name": "foo", "id": ["foo"]}]}
             )
             m.post("https://data.example.com/auth/analyze", callback=handler)
             with pytest.raises(web.HTTPError):
                 await GafaelfawrLoginHandler._build_auth_info(headers)
+
+        # Test groups without GIDs.
+        with aioresponses() as m:
+            handler = build_handler(
+                {
+                    "uid": "bar",
+                    "uidNumber": "4510",
+                    "isMemberOf": [
+                        {"name": "group-one", "id": 1726},
+                        {"name": "group-two"},
+                        {"name": "another", "id": 6789},
+                    ],
+                }
+            )
+            m.post("https://data.example.com/auth/analyze", callback=handler)
+            assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
+                "name": "bar",
+                "auth_state": {
+                    "uid": 4510,
+                    "token": "some-token",
+                    "groups": ["group-one", "another"],
+                    "gids": [1726, 6789],
+                },
+            }

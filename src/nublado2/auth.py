@@ -168,11 +168,20 @@ class GafaelfawrLoginHandler(BaseHandler):
             raise web.HTTPError(403, "Request token is invalid")
 
         # Construct an auth_info structure with the additional details about
-        # the user.
+        # the user.  We want only the groups that have GIDs (NCSA generates
+        # some groups that have names but no GID).
         uid = token_data.get("uidNumber")
         try:
-            groups = [g["name"] for g in token_data.get("isMemberOf", [])]
-            gids = [int(g["id"]) for g in token_data.get("isMemberOf", [])]
+            groups = [
+                g["name"]
+                for g in token_data.get("isMemberOf", [])
+                if "id" in g
+            ]
+            gids = [
+                int(g["id"])
+                for g in token_data.get("isMemberOf", [])
+                if "id" in g
+            ]
         except Exception:
             raise web.HTTPError(403, "Token data is not in a valid format")
         return {
