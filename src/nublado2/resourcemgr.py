@@ -27,11 +27,22 @@ class ResourceManager(LoggingConfigurable):
             auth_state = await user.get_auth_state()
             self.log.debug(f"Auth state={auth_state}")
 
+            groups = auth_state["groups"]
+            gids = auth_state["gids"]
+
+            # Build a comma separated list of group:gid
+            # ex: group1:1000,group2:1001,group3:1002
+            external_groups = ",".join(
+                [f"{group}:{gid}" for group, gid in zip(groups, gids)]
+            )
+
             template_values = {
                 "user": user.name,
                 "uid": auth_state["uid"],
                 "token": auth_state["token"],
-                "groups": ",".join(auth_state["groups"]),
+                "groups": groups,
+                "gids": gids,
+                "external_groups": external_groups,
                 "base_url": NubladoConfig().get().get("base_url"),
             }
 
