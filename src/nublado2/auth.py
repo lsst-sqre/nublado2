@@ -173,12 +173,7 @@ class GafaelfawrLoginHandler(BaseHandler):
         uid = token_data.get("uidNumber")
         try:
             groups = [
-                g["name"]
-                for g in token_data.get("isMemberOf", [])
-                if "id" in g
-            ]
-            gids = [
-                int(g["id"])
+                {"name": g["name"], "id": int(g["id"])}
                 for g in token_data.get("isMemberOf", [])
                 if "id" in g
             ]
@@ -190,6 +185,5 @@ class GafaelfawrLoginHandler(BaseHandler):
                 "uid": int(uid) if uid else None,
                 "token": token,
                 "groups": groups,
-                "gids": gids,
             },
         }
