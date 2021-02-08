@@ -39,12 +39,6 @@ class HubConfig(LoggingConfigurable):
             "envFrom": [{"configMapRef": {"name": "lab-environment"}}]
         }
 
-        # The zero-to-jupyterhub charts normally set the command to
-        # jupyterlab-singleuser, and override what the command is for
-        # the docker container.  If you set cmd = None, this means use
-        # the default command for the docker container entrypoint.
-        c.KubeSpawner.cmd = None
-
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
 
