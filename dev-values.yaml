@@ -117,7 +117,7 @@ config:
           jovyan:x:768:{{user}}
           provisionator:x:769:
           {{user}}:x:{{uid}}:{% for group in groups %}
-          {{ group }}:x:{{ gids[loop.index]}}:{{ user }}{% endfor %}
+          {{ group.name }}:x:{{ group.id }}:{{ user }}{% endfor %}
     - apiVersion: v1
       kind: ConfigMap
       metadata:
@@ -163,7 +163,7 @@ config:
           jovyan:!::{{user}}
           provisionator:!::
           {{user}}:!::{% for g in groups %}
-          {{ g }}:!::{{ user }}{% endfor %}
+          {{ g.name }}:!::{{ user }}{% endfor %}
     - apiVersion: v1
       kind: ConfigMap
       metadata:

@@ -96,7 +96,6 @@ async def test_login_handler() -> None:
                     "uid": None,
                     "token": "some-token",
                     "groups": [],
-                    "gids": [],
                 },
             }
 
@@ -108,8 +107,8 @@ async def test_login_handler() -> None:
                     "uidNumber": "4510",
                     "isMemberOf": [
                         {"name": "group-one", "id": 1726},
-                        {"name": "group-two", "id": 1618},
-                        {"name": "another", "id": 6789},
+                        {"name": "group-two", "id": "1618"},
+                        {"name": "another", "id": 6789, "foo": "bar"},
                     ],
                 }
             )
@@ -119,8 +118,11 @@ async def test_login_handler() -> None:
                 "auth_state": {
                     "uid": 4510,
                     "token": "some-token",
-                    "groups": ["group-one", "group-two", "another"],
-                    "gids": [1726, 1618, 6789],
+                    "groups": [
+                        {"name": "group-one", "id": 1726},
+                        {"name": "group-two", "id": 1618},
+                        {"name": "another", "id": 6789},
+                    ],
                 },
             }
 
@@ -152,7 +154,9 @@ async def test_login_handler() -> None:
                 "auth_state": {
                     "uid": 4510,
                     "token": "some-token",
-                    "groups": ["group-one", "another"],
-                    "gids": [1726, 6789],
+                    "groups": [
+                        {"name": "group-one", "id": 1726},
+                        {"name": "another", "id": 6789},
+                    ],
                 },
             }
