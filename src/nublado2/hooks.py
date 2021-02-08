@@ -57,7 +57,7 @@ class NubladoHooks(LoggingConfigurable):
         # if needed.  Defaulting to the container default.
         spawner.cmd = nc.pod_cmd()
 
-        await self.resourcemgr.create_user_resources(spawner.user)
+        await self.resourcemgr.create_user_resources(spawner)
 
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name
