@@ -3,7 +3,7 @@ if [ -f dev-chart.tgz ]
 then
   CHART=dev-chart.tgz
 else
-  CHART=nublado2
+  CHART=lsst-sqre/nublado2
 fi
 
 helm delete n2-dev --namespace n2-dev || true
