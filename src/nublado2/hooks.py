@@ -49,6 +49,14 @@ class NubladoHooks(LoggingConfigurable):
             spawner.uid = auth_state["uid"]
             spawner.gid = auth_state["uid"]
 
+        # The zero-to-jupyterhub charts normally set the command to
+        # jupyterlab-singleuser, and override what the command is for
+        # the docker container.  If you set cmd = , this means use
+        # the default command for the docker container entrypoint.
+        # This will allow the chart to configure the container command line,
+        # if needed.  Defaulting to the container default.
+        spawner.cmd = nc.pod_cmd()
+
         await self.resourcemgr.create_user_resources(spawner.user)
 
     def post_stop(self, spawner: Spawner) -> None:
