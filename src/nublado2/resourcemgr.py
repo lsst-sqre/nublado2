@@ -1,15 +1,11 @@
-from typing import TYPE_CHECKING
-
 import yaml
 from jinja2 import Template
+from jupyterhub.spawner import Spawner
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from traitlets.config import LoggingConfigurable
 
 from nublado2.nublado_config import NubladoConfig
-
-if TYPE_CHECKING:
-    from jupyterhub.user import User
 
 config.load_incluster_config()
 
@@ -22,9 +18,9 @@ class ResourceManager(LoggingConfigurable):
     k8s_api = client.api_client.ApiClient()
     k8s_client = client.CoreV1Api()
 
-    async def create_user_resources(self, user: "User") -> None:
+    async def create_user_resources(self, spawner: Spawner) -> None:
         try:
-            auth_state = await user.get_auth_state()
+            auth_state = await spawner.user.get_auth_state()
             self.log.debug(f"Auth state={auth_state}")
 
             groups = auth_state["groups"]
@@ -37,7 +33,8 @@ class ResourceManager(LoggingConfigurable):
             )
 
             template_values = {
-                "user": user.name,
+                "user_namespace": spawner.namespace,
+                "user": spawner.user.name,
                 "uid": auth_state["uid"],
                 "token": auth_state["token"],
                 "groups": groups,
