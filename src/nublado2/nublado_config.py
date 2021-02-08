@@ -2,7 +2,7 @@
 
 __all__ = ["NubladoConfig"]
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import yaml
 from traitlets.config import LoggingConfigurable
@@ -25,5 +25,5 @@ class NubladoConfig(LoggingConfigurable):
 
         raise ValueError(f"Size {name} not found")
 
-    def use_auth_uid(self) -> bool:
-        return self.get().get("use_auth_uid", True)
+    def pod_uid(self) -> Optional[int]:
+        return self.get().get("pod_uid", None)

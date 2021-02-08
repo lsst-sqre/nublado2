@@ -38,8 +38,16 @@ class NubladoHooks(LoggingConfigurable):
 
         auth_state = await spawner.user.get_auth_state()
 
-        if nc.use_auth_uid():
+        # Should we spawn with the uid of the user (from the auth state)
+        # or the provisioner (769) which will then sudo and become the
+        # user?
+        pod_uid = nc.pod_uid()
+        if pod_uid:
+            spawner.uid = pod_uid
+            spawner.gid = pod_uid
+        else:
             spawner.uid = auth_state["uid"]
+            spawner.gid = auth_state["uid"]
 
         await self.resourcemgr.create_user_resources(spawner.user)
 
