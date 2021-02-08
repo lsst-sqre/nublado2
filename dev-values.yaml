@@ -48,7 +48,7 @@ config:
       - name: Large
         cpu: 4
         ram: 12288M
-  use_auth_uid: False
+  pod_uid: 769
   user_resources:
     - apiVersion: v1
       kind: Namespace
