@@ -19,3 +19,4 @@ click
 jinja2
 jupyterhub-idle-culler
 https://github.com/cbanek/kubespawner/archive/f2810911a7d5206535db52a8fd5762bd28878975.zip
+ruamel.yaml
