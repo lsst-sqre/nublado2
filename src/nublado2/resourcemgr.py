@@ -1,8 +1,9 @@
-import yaml
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
+from ruamel import yaml
+from ruamel.yaml import RoundTripDumper, RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
 from nublado2.nublado_config import NubladoConfig
@@ -31,6 +32,20 @@ class ResourceManager(LoggingConfigurable):
                 [f'{g["name"]}:{g["id"]}' for g in groups]
             )
 
+            pod_manifest = await spawner.get_pod_manifest()
+
+            # Here we make a few mangles to the jupyter pod manifest
+            # before stuffing it into configmaps.  This will end up
+            # being used for the pod template for dask.
+            pod_manifest.metadata.name = None
+            pod_manifest.metadata.namespace = None
+            pod_manifest.spec.containers[0].ports = None
+            pod_manifest.spec.containers[0].args = [
+                "/opt/lsst/software/jupyterlab/provisionator.bash"
+            ]
+
+            dask_yaml = yaml.dump(pod_manifest.to_dict())
+
             template_values = {
                 "user_namespace": spawner.namespace,
                 "user": spawner.user.name,
@@ -39,15 +54,20 @@ class ResourceManager(LoggingConfigurable):
                 "groups": groups,
                 "external_groups": external_groups,
                 "base_url": NubladoConfig().get().get("base_url"),
+                "dask_yaml": dask_yaml,
             }
 
             self.log.debug(f"Template values={template_values}")
             resources = NubladoConfig().get().get("user_resources", [])
             for r in resources:
-                t = Template(yaml.dump(r))
+                t_yaml = yaml.dump(r, Dumper=RoundTripDumper)
+                self.log.debug(f"Resource template:\n{t_yaml}")
+                t = Template(t_yaml)
                 templated_yaml = t.render(template_values)
                 self.log.debug(f"Creating resource:\n{templated_yaml}")
-                templated_resource = yaml.load(templated_yaml, yaml.SafeLoader)
+                templated_resource = yaml.load(
+                    templated_yaml, Loader=RoundTripLoader
+                )
                 create_from_dict(self.k8s_api, templated_resource)
         except Exception:
             self.log.exception("Exception creating user resource!")

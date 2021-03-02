@@ -49,6 +49,11 @@ class NubladoHooks(LoggingConfigurable):
             spawner.uid = auth_state["uid"]
             spawner.gid = auth_state["uid"]
 
+        # Since we will create a serviceaccount in the user resources,
+        # make the pod use that.  This will also automount the token,
+        # which is useful for dask.
+        spawner.service_account = f"{spawner.user.name}-serviceaccount"
+
         # The zero-to-jupyterhub charts normally set the command to
         # jupyterlab-singleuser, and override what the command is for
         # the docker container.  If you set cmd = , this means use
