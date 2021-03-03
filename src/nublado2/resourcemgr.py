@@ -43,8 +43,16 @@ class ResourceManager(LoggingConfigurable):
             pod_manifest.spec.containers[0].args = [
                 "/opt/lsst/software/jupyterlab/provisionator.bash"
             ]
+            pod_manifest.spec.containers[0].env.append(
+                client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
+            )
 
-            dask_yaml = yaml.dump(pod_manifest.to_dict())
+            # This will take the python model names and transform
+            # them to the names kubernetes expects, which to_dict
+            # alone doesn't.
+            dask_yaml = yaml.dump(
+                self.k8s_api.sanitize_for_serialization(pod_manifest)
+            )
 
             template_values = {
                 "user_namespace": spawner.namespace,
