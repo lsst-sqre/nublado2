@@ -28,6 +28,3 @@ class NubladoConfig(LoggingConfigurable):
 
     def pod_uid(self) -> Optional[int]:
         return self.get().get("pod_uid", None)
-
-    def pod_cmd(self) -> Optional[str]:
-        return self.get().get("pod_cmd", None)

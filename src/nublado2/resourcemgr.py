@@ -35,14 +35,15 @@ class ResourceManager(LoggingConfigurable):
             pod_manifest = await spawner.get_pod_manifest()
 
             # Here we make a few mangles to the jupyter pod manifest
-            # before stuffing it into configmaps.  This will end up
+            # before using it for templating.  This will end up
             # being used for the pod template for dask.
+            # Unset the name of the container, to let dask make the container
+            # names, otherwise you'll get an obtuse error from k8s about not
+            # being able to create the container.
             pod_manifest.metadata.name = None
-            pod_manifest.metadata.namespace = None
-            pod_manifest.spec.containers[0].ports = None
-            pod_manifest.spec.containers[0].args = [
-                "/opt/lsst/software/jupyterlab/provisionator.bash"
-            ]
+
+            # This is an argument to the provisioning script to signal it
+            # as a dask worker.
             pod_manifest.spec.containers[0].env.append(
                 client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
             )

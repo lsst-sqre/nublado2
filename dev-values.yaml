@@ -18,6 +18,7 @@ jupyterhub:
         nublado2.hub_config.HubConfig().configure(c)
 
   singleuser:
+    cmd: "/opt/lsst/software/jupyterlab/provisionator.bash"
     storage:
       type: none
       extraVolumes:
