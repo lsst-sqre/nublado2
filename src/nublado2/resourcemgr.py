@@ -32,7 +32,7 @@ class ResourceManager(LoggingConfigurable):
                 [f'{g["name"]}:{g["id"]}' for g in groups]
             )
 
-            pod_manifest = await spawner.get_pod_manifest()
+            dask_template = await spawner.get_pod_manifest()
 
             # Here we make a few mangles to the jupyter pod manifest
             # before using it for templating.  This will end up
@@ -40,11 +40,11 @@ class ResourceManager(LoggingConfigurable):
             # Unset the name of the container, to let dask make the container
             # names, otherwise you'll get an obtuse error from k8s about not
             # being able to create the container.
-            pod_manifest.metadata.name = None
+            dask_template.metadata.name = None
 
             # This is an argument to the provisioning script to signal it
             # as a dask worker.
-            pod_manifest.spec.containers[0].env.append(
+            dask_template.spec.containers[0].env.append(
                 client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
             )
 
@@ -52,7 +52,7 @@ class ResourceManager(LoggingConfigurable):
             # them to the names kubernetes expects, which to_dict
             # alone doesn't.
             dask_yaml = yaml.dump(
-                self.k8s_api.sanitize_for_serialization(pod_manifest)
+                self.k8s_api.sanitize_for_serialization(dask_template)
             )
 
             template_values = {
