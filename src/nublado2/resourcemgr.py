@@ -20,6 +20,7 @@ class ResourceManager(LoggingConfigurable):
     k8s_client = client.CoreV1Api()
 
     async def create_user_resources(self, spawner: Spawner) -> None:
+        """Create the user resources for this spawning session."""
         try:
             auth_state = await spawner.user.get_auth_state()
             self.log.debug(f"Auth state={auth_state}")
@@ -32,29 +33,6 @@ class ResourceManager(LoggingConfigurable):
                 [f'{g["name"]}:{g["id"]}' for g in groups]
             )
 
-            dask_template = await spawner.get_pod_manifest()
-
-            # Here we make a few mangles to the jupyter pod manifest
-            # before using it for templating.  This will end up
-            # being used for the pod template for dask.
-            # Unset the name of the container, to let dask make the container
-            # names, otherwise you'll get an obtuse error from k8s about not
-            # being able to create the container.
-            dask_template.metadata.name = None
-
-            # This is an argument to the provisioning script to signal it
-            # as a dask worker.
-            dask_template.spec.containers[0].env.append(
-                client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
-            )
-
-            # This will take the python model names and transform
-            # them to the names kubernetes expects, which to_dict
-            # alone doesn't.
-            dask_yaml = yaml.dump(
-                self.k8s_api.sanitize_for_serialization(dask_template)
-            )
-
             template_values = {
                 "user_namespace": spawner.namespace,
                 "user": spawner.user.name,
@@ -63,7 +41,7 @@ class ResourceManager(LoggingConfigurable):
                 "groups": groups,
                 "external_groups": external_groups,
                 "base_url": NubladoConfig().get().get("base_url"),
-                "dask_yaml": dask_yaml,
+                "dask_yaml": await self._build_dask_template(spawner),
             }
 
             self.log.debug(f"Template values={template_values}")
@@ -82,5 +60,41 @@ class ResourceManager(LoggingConfigurable):
             self.log.exception("Exception creating user resource!")
             raise
 
+    async def _build_dask_template(self, spawner: Spawner) -> str:
+        """Build a template for dask workers from the jupyter pod manifest."""
+        dask_template = await spawner.get_pod_manifest()
+
+        # Here we make a few mangles to the jupyter pod manifest
+        # before using it for templating.  This will end up
+        # being used for the pod template for dask.
+        # Unset the name of the container, to let dask make the container
+        # names, otherwise you'll get an obtuse error from k8s about not
+        # being able to create the container.
+        dask_template.metadata.name = None
+
+        # This is an argument to the provisioning script to signal it
+        # as a dask worker.
+        dask_template.spec.containers[0].env.append(
+            client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
+        )
+
+        # This will take the python model names and transform
+        # them to the names kubernetes expects, which to_dict
+        # alone doesn't.
+        dask_yaml = yaml.dump(
+            self.k8s_api.sanitize_for_serialization(dask_template)
+        )
+
+        if not dask_yaml:
+            # This is mostly to help with the typing.
+            raise Exception("Dask template ended up empty.")
+        else:
+            return dask_yaml
+
     def delete_user_resources(self, namespace: str) -> None:
+        """Clean up a jupyterlab by deleting the whole namespace.
+
+        The reason is it's easier to do this than try to make a list
+        of resources to delete, especially when new things may be
+        dynamically created outside of the hub, like dask."""
         self.k8s_client.delete_namespace(name=namespace)
