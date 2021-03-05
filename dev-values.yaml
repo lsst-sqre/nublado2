@@ -3,6 +3,10 @@ jupyterhub:
     enabled: true
 
   hub:
+    db:
+      type: sqlite-memory
+    networkPolicy:
+      enabled: false
     image:
       name: lsstsqre/nublado2
       tag: dev
@@ -14,21 +18,26 @@ jupyterhub:
         nublado2.hub_config.HubConfig().configure(c)
 
   singleuser:
+    cmd: "/opt/lsst/software/jupyterlab/provisionator.bash"
     storage:
       type: none
-    extraVolumes:
-      - name: home
-        emptyDir: {}
-    extraVolumeMounts:
-      - name: home
-        mountPath: /home
+      extraVolumes:
+        - name: home
+          emptyDir: {}
+        - name: dask
+          configMap:
+            name: dask
+      extraVolumeMounts:
+        - name: home
+          mountPath: /home
+        - name: dask
+          mountPath: /etc/dask
 
 
   ingress:
     hosts: ["minikube.lsst.codes"]
     annotations:
       nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes/login"
-      nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr-service.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook"
 
 config:
   base_url: "https://minikube.lsst.codes/"
@@ -53,14 +62,14 @@ config:
     - apiVersion: v1
       kind: Namespace
       metadata:
-        name: "{{user_namespace}}"
+        name: "{{ user_namespace }}"
     - apiVersion: v1
       kind: ConfigMap
       metadata:
         name: lab-environment
-        namespace: "{{user_namespace}}"
+        namespace: "{{ user_namespace }}"
       data:
-        EXTERNAL_INSTANCE_URL: "{{base_url}}"
+        EXTERNAL_INSTANCE_URL: "{{ base_url }}"
         FIREFLY_ROUTE: /portal/app
         HUB_ROUTE: /n2
         JS9_ROUTE: /js9
@@ -69,14 +78,14 @@ config:
         SODA_ROUTE: /api/image/soda
         WORKFLOW_ROUTE: /wf
         AUTO_REPO_URLS: https://github.com/lsst-sqre/notebook-demo
-        EXTERNAL_GROUPS: "{{external_groups}}"
-        EXTERNAL_UID: "{{uid}}"
-        ACCESS_TOKEN: "{{token}}"
+        EXTERNAL_GROUPS: "{{ external_groups }}"
+        EXTERNAL_UID: "{{ uid }}"
+        ACCESS_TOKEN: "{{ token }}"
     - apiVersion: v1
       kind: ConfigMap
       metadata:
         name: group
-        namespace: "{{user_namespace}}"
+        namespace: "{{ user_namespace }}"
       data:
         group: |
           root:x:0:
@@ -110,11 +119,11 @@ config:
           systemd-network:x:192:
           dbus:x:81:
           ssh_keys:x:998:
-          lsst_lcl:x:1000:{{user}}
+          lsst_lcl:x:1000:{{ user }}
           tss:x:59:
           cgred:x:997:
           screen:x:84:
-          jovyan:x:768:{{user}}
+          jovyan:x:768:{{ user }}
           provisionator:x:769:
           {{user}}:x:{{uid}}:{% for group in groups %}
           {{ group.name }}:x:{{ group.id }}:{{ user }}{% endfor %}
@@ -122,7 +131,7 @@ config:
       kind: ConfigMap
       metadata:
         name: gshadow
-        namespace: "{{user_namespace}}"
+        namespace: "{{ user_namespace }}"
       data:
         gshadow: |
           root:!::
@@ -156,19 +165,19 @@ config:
           systemd-network:!::
           dbus:!::
           ssh_keys:!::
-          lsst_lcl:!::{{user}}
+          lsst_lcl:!::{{ user }}
           tss:!::
           cgred:!::
           screen:!::
-          jovyan:!::{{user}}
+          jovyan:!::{{ user }}
           provisionator:!::
-          {{user}}:!::{% for g in groups %}
+          {{ user }}:!::{% for g in groups %}
           {{ g.name }}:!::{{ user }}{% endfor %}
     - apiVersion: v1
       kind: ConfigMap
       metadata:
         name: passwd
-        namespace: "{{user_namespace}}"
+        namespace: "{{ user_namespace }}"
       data:
         passwd: |
           root:x:0:0:root:/root:/bin/bash
@@ -189,12 +198,12 @@ config:
           lsst_lcl:x:1000:1000::/home/lsst_lcl:/bin/bash
           tss:x:59:59:Account used by the trousers package to sandbox the tcsd daemon:/dev/null:/sbin/nologin
           provisionator:x:769:769:Lab provisioning user:/home/provisionator:/bin/bash
-          {{user}}:x:{{uid}}:{{uid}}::/home/{{user}}:/bin/bash
+          {{ user }}:x:{{ uid }}:{{ uid }}::/home/{{ user }}:/bin/bash
     - apiVersion: v1
       kind: ConfigMap
       metadata:
         name: shadow
-        namespace: "{{user_namespace}}"
+        namespace: "{{ user_namespace }}"
       data:
         shadow: |
           root:*:18000:0:99999:7:::
@@ -216,7 +225,40 @@ config:
           tss:*:18000:0:99999:7:::
           provisionator:*:18000:0:99999:7:::
           {{user}}:*:18000:0:99999:7:::
-
-
+    - apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: dask
+        namespace: "{{ user_namespace }}"
+      data:
+        dask_worker.yml: |
+          {{ dask_yaml | indent(4) }}
+    - apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: "{{ user }}-serviceaccount"
+        namespace: "{{ user_namespace }}"
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: "{{ user }}-role"
+        namespace: "{{ user_namespace }}"
+      rules:
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["create", "get", "delete", "list"]
+    - apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ user }}-rolebinding"
+        namespace: "{{ user_namespace }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: "{{ user }}-role"
+      subjects:
+      - kind: ServiceAccount
+        name: "{{ user }}-serviceaccount"
+        namespace: "{{ user_namespace }}"
 
 vault_secret_path: "secret/k8s_operator/minikube.lsst.codes/nublado2"

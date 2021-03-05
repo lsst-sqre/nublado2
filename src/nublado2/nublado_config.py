@@ -4,14 +4,15 @@ __all__ = ["NubladoConfig"]
 
 from typing import Any, Dict, Optional, Tuple
 
-import yaml
+from ruamel import yaml
+from ruamel.yaml import RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
 
 class NubladoConfig(LoggingConfigurable):
     def get(self) -> Dict[str, Any]:
         with open("/etc/jupyterhub/nublado_config.yaml") as f:
-            nc = yaml.load(f.read(), yaml.FullLoader)
+            nc = yaml.load(f.read(), Loader=RoundTripLoader)
 
         self.log.debug(f"Loaded Nublado Config:\n{nc}")
         return nc
@@ -27,6 +28,3 @@ class NubladoConfig(LoggingConfigurable):
 
     def pod_uid(self) -> Optional[int]:
         return self.get().get("pod_uid", None)
-
-    def pod_cmd(self) -> Optional[str]:
-        return self.get().get("pod_cmd", None)
