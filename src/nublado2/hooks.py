@@ -25,6 +25,12 @@ class NubladoHooks(LoggingConfigurable):
         # selected.
         size_name = options["size"][0]
         image_name = options["image"][0]
+        image_tag = options["image_tag"][0]
+
+        # If the user selected one of the images in the dropdown,
+        # use image.
+        if image_name == "image_tag":
+            image_name = image_tag
 
         # Take size and image names, which are returned as form data,
         # look up associated values, and configure the spawner.

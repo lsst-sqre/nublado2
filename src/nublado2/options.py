@@ -33,6 +33,14 @@ options_template = Template(
     >
     {{ i.name }}<br />
 {% endfor %}
+
+    <input type="radio" name="image" id="image_tag" value="image_tag">
+    Select historical image:<br />
+    <select name="image_tag">
+    {% for i in all_images %}
+        <option value="{{ i.image_url }}">{{ i.name }}</option>
+    {% endfor %}
+    </select>
 </td>
 
 <td width="50%">
@@ -66,16 +74,22 @@ class NubladoOptions(LoggingConfigurable):
         sizes = options_config["sizes"]
 
         images_url = options_config.get("images_url")
-        images = await self._get_images_from_url(images_url)
+
+        cachemachine_response = await self._get_images_from_url(images_url)
+
+        all_images = cachemachine_response["all"]
+        images = cachemachine_response["images"]
         images.extend(options_config["images"])
 
-        return options_template.render(images=images, sizes=sizes)
+        return options_template.render(
+            all_images=all_images, images=images, sizes=sizes
+        )
 
     async def _get_images_from_url(
         self, url: Optional[str]
-    ) -> List[Dict[str, str]]:
+    ) -> Dict[str, List[Dict[str, str]]]:
         if not url:
-            return []
+            return {"all": [], "images": []}
 
         r = await session.get(url)
         if r.status != 200:
