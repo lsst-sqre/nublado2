@@ -1,0 +1,17 @@
+{
+  "iss": "${environment_url}",
+  "aud": "${environment_url}",
+  "auth_time": "${issue_time}",
+  "exp": ${expiration_time},
+  "iat": ${issue_time},
+  "name": "${username}",
+  "uid": "${username}",
+  "uidNumber": "${uidnumber}",
+  "isMemberOf": [
+    {
+      "name": "wheel",
+      "id": 0
+    }
+  ],
+  "scope": "exec:admin"
+}
