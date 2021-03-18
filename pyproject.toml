@@ -6,6 +6,9 @@ requires = [
 ]
 build-backend = 'setuptools.build_meta'
 
+[options]
+include_package_data = true
+
 [tool.setuptools_scm]
 
 [tool.tox]
