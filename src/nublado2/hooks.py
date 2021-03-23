@@ -44,16 +44,11 @@ class NubladoHooks(LoggingConfigurable):
 
         auth_state = await spawner.user.get_auth_state()
 
-        # Should we spawn with the uid of the user (from the auth state)
-        # or the provisioner (769) which will then sudo and become the
-        # user?
-        pod_uid = nc.pod_uid()
-        if pod_uid:
-            spawner.uid = pod_uid
-            spawner.gid = pod_uid
-        else:
-            spawner.uid = auth_state["uid"]
-            spawner.gid = auth_state["uid"]
+        # We now always spawn as the target user; there is no way
+        #  to do "provisionator" anymore
+        spawner.uid = auth_state["uid"]
+        spawner.gid = auth_state["uid"]
+        spawner.supplemental_gids = [g["id"] for g in auth_state["groups"]]
 
         # Since we will create a serviceaccount in the user resources,
         # make the pod use that.  This will also automount the token,

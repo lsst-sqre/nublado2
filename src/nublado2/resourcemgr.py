@@ -1,15 +1,12 @@
-import asyncio
 import datetime
 import json
-import math
 import os
-from string import Template as strTemplate
-from typing import Any, Dict, Optional
 
 import aiohttp
 import jwt
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
+from jupyterhub.utils import exponential_backoff
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from ruamel import yaml
@@ -43,6 +40,7 @@ class ResourceManager(LoggingConfigurable):
             auth_state = await spawner.user.get_auth_state()
             self.log.debug(f"Auth state={auth_state}")
 
+            nc = NubladoConfig().get()
             groups = auth_state["groups"]
 
             # Build a comma separated list of group:gid
@@ -58,12 +56,12 @@ class ResourceManager(LoggingConfigurable):
                 "token": auth_state["token"],
                 "groups": groups,
                 "external_groups": external_groups,
-                "base_url": NubladoConfig().get().get("base_url"),
+                "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
             }
 
             self.log.debug(f"Template values={template_values}")
-            resources = NubladoConfig().get().get("user_resources", [])
+            resources = nc.get("user_resources", [])
             for r in resources:
                 t_yaml = yaml.dump(r, Dumper=RoundTripDumper)
                 self.log.debug(f"Resource template:\n{t_yaml}")
@@ -80,65 +78,66 @@ class ResourceManager(LoggingConfigurable):
 
     async def _request_homedir_provisioning(self, spawner: Spawner) -> None:
         """Submit a request for provisioning via Moneypenny."""
-        nc = NubladoConfig()
+        nc = NubladoConfig().get()
         hc = self.http_client
-        base_url: str = nc.get().get("base_url") or "http://localhost:8080"
+        base_url = nc.get("base_url")
         uname = spawner.user.name
         auth_state = await spawner.user.get_auth_state()
-        dossier = await self._make_dossier(uname, auth_state)
-        token = await self._mint_admin_token(base_url, None)
-        mp_ep = f"{base_url}/moneypenny"
-        endpt = f"{mp_ep}/commission"
+        dossier = {
+            "username": uname,
+            "uid": int(auth_state["uid"]),
+            "groups": auth_state["groups"],
+        }
+        token = await self._mint_admin_token()
+        endpt = f"{base_url}/moneypenny/commission"
         auth = {"Authorization": f"Bearer {token}"}
         self.log.debug(f"Posting dossier {dossier} to {endpt}")
         resp = await hc.post(endpt, json=dossier, headers=auth)
         self.log.debug(f"POST got {resp.status}")
         resp.raise_for_status()
-        expiry = datetime.datetime.now() + datetime.timedelta(seconds=300)
+        route = f"{base_url}/moneypenny/{uname}"
         count = 0
-        route = f"{mp_ep}/{uname}"
-        while datetime.datetime.now() < expiry:
+
+        async def _check_moneypenny_completion() -> bool:
+            nonlocal count
             count += 1
             self.log.debug(f"Checking Moneypenny status at {route}: #{count}")
             resp = await hc.get(f"{route}", headers=auth)
             status = resp.status
             self.log.debug(f"Moneypenny status: {status}")
             if status == 200 or 404:
-                return
+                return True
             if status != 202:
                 raise RuntimeError(
                     f"Unexpected status from Moneypenny: {status}"
                 )
-            await asyncio.sleep(int(math.log(count)))
-        raise RuntimeError("Moneypenny timed out")
+            # Moneypenny is still working.
+            return False
 
-    async def _make_dossier(
-        self, name: str, auth_state: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        dossier = {
-            "username": name,
-            "uid": int(auth_state["uid"]),
-            "groups": auth_state["groups"],
-        }
-        self.log.debug(f"Dossier: {dossier}")
-        return dossier
+        await exponential_backoff(
+            _check_moneypenny_completion,
+            fail_message="Moneypenny did not complete.",
+            timeout=300,
+        )
 
-    async def _mint_admin_token(
-        self, base_url: str, signing_key_path: Optional[str]
-    ) -> str:
-        """Allowing specification of the signing key makes testing easier."""
+    async def _mint_admin_token(self) -> str:
+        """Create a token with exec:admin scope, signed as if Gafaelfawr had
+        created it, in order to submit orders to Moneypenny.
+        """
+        nc = NubladoConfig().get()
         template_file = os.path.join(
             os.path.dirname(__file__), "static/moneypenny-jwt-template.json"
         )
-        with open(template_file, "r") as f:
-            token_template = strTemplate(f.read())
-        if not signing_key_path:
-            signing_key_path = "/etc/keys/signing_key.pem"
+        base_url = nc.get("base_url")
+        signing_key_path = nc.get("signing_key_path")
+        assert isinstance(signing_key_path, str)
         with open(signing_key_path, "r") as f:
             signing_key = f.read()
             current_time = int(
                 datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
             )
+        with open(template_file, "r") as f:
+            token_template = Template(f.read())
         token_data = {
             "environment_url": base_url,
             "username": "moneypenny",
@@ -146,7 +145,8 @@ class ResourceManager(LoggingConfigurable):
             "issue_time": current_time,
             "expiration_time": current_time + 300,
         }
-        token_dict = json.loads(token_template.substitute(token_data))
+        rendered_token = token_template.render(token_data)
+        token_dict = json.loads(rendered_token)
         token = jwt.encode(
             token_dict,
             key=signing_key,
