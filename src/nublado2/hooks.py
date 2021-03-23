@@ -54,6 +54,7 @@ class NubladoHooks(LoggingConfigurable):
         else:
             spawner.uid = auth_state["uid"]
             spawner.gid = auth_state["uid"]
+            spawner.supplemental_gids = [g["id"] for g in auth_state["groups"]]
 
         # Since we will create a serviceaccount in the user resources,
         # make the pod use that.  This will also automount the token,
