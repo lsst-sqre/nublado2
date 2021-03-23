@@ -56,7 +56,6 @@ class ResourceManager(LoggingConfigurable):
                 "token": auth_state["token"],
                 "groups": groups,
                 "external_groups": external_groups,
-                "no_sudo": nc.get("no_sudo"),
                 "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
             }
@@ -82,8 +81,6 @@ class ResourceManager(LoggingConfigurable):
         nc = NubladoConfig().get()
         hc = self.http_client
         base_url = nc.get("base_url")
-        signing_key_path = nc.get("signing_key_path")
-        assert isinstance(base_url, str) and isinstance(signing_key_path, str)
         uname = spawner.user.name
         auth_state = await spawner.user.get_auth_state()
         dossier = {
@@ -91,7 +88,7 @@ class ResourceManager(LoggingConfigurable):
             "uid": int(auth_state["uid"]),
             "groups": auth_state["groups"],
         }
-        token = await self._mint_admin_token(base_url, signing_key_path)
+        token = await self._mint_admin_token()
         endpt = f"{base_url}/moneypenny/commission"
         auth = {"Authorization": f"Bearer {token}"}
         self.log.debug(f"Posting dossier {dossier} to {endpt}")
@@ -123,13 +120,17 @@ class ResourceManager(LoggingConfigurable):
             timeout=300,
         )
 
-    async def _mint_admin_token(
-        self, base_url: str, signing_key_path: str
-    ) -> str:
-        """Allowing specification of the signing key makes testing easier."""
+    async def _mint_admin_token(self) -> str:
+        """Create a token with exec:admin scope, signed as if Gafaelfawr had
+        created it, in order to submit orders to Moneypenny.
+        """
+        nc = NubladoConfig().get()
         template_file = os.path.join(
             os.path.dirname(__file__), "static/moneypenny-jwt-template.json"
         )
+        base_url = nc.get("base_url")
+        signing_key_path = nc.get("signing_key_path")
+        assert isinstance(signing_key_path, str)
         with open(signing_key_path, "r") as f:
             signing_key = f.read()
             current_time = int(

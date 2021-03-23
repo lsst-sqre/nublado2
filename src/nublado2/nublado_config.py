@@ -2,7 +2,7 @@
 
 __all__ = ["NubladoConfig"]
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 
 from ruamel import yaml
 from ruamel.yaml import RoundTripLoader
@@ -25,6 +25,3 @@ class NubladoConfig(LoggingConfigurable):
                 return (float(s["cpu"]), s["ram"])
 
         raise ValueError(f"Size {name} not found")
-
-    def pod_uid(self) -> Optional[int]:
-        return self.get().get("pod_uid", None)
