@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+from typing import Tuple
 
 import aiohttp
 import jwt
@@ -49,6 +50,16 @@ class ResourceManager(LoggingConfigurable):
                 [f'{g["name"]}:{g["id"]}' for g in groups]
             )
 
+            # Retrieve and resolve image tag
+            spec = spawner.user_options["image"][0]
+
+            (repo, img_name, img_tag, img_hash) = await self._split_spec(spec)
+
+            if img_tag == "recommended":
+                self.log.debug("Resolving 'recommended' tag")
+                real_img_spec = spawner.user_options["image_tag"][0]
+                img_tag = real_img_spec.split(":")[-1]
+
             template_values = {
                 "user_namespace": spawner.namespace,
                 "user": spawner.user.name,
@@ -59,6 +70,9 @@ class ResourceManager(LoggingConfigurable):
                 "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
                 "auto_repo_urls": nc.get("auto_repo_urls"),
+                "image_name": img_name,
+                "image_tag": img_tag,
+                "image_hash": img_hash,
             }
 
             self.log.debug(f"Template values={template_values}")
@@ -76,6 +90,15 @@ class ResourceManager(LoggingConfigurable):
         except Exception:
             self.log.exception("Exception creating user resource!")
             raise
+
+    async def _split_spec(self, spec: str) -> Tuple[str, str, str, str]:
+        image = spec.split("|")[0]
+        ihash = spec.split("|")[-1]
+        pieces = image.split(":")
+        repo = ":".join(pieces[:-1])
+        tag = pieces[-1]
+        name = repo.split("/")[-1]
+        return (repo, name, tag, ihash)
 
     async def _request_homedir_provisioning(self, spawner: Spawner) -> None:
         """Submit a request for provisioning via Moneypenny."""

@@ -28,7 +28,7 @@ options_template = Template(
 <td width="50%">
 {% for i in images %}
     <input type="radio" name="image"
-     id="{{ i.name }}" value="{{ i.image_url }}"
+     id="{{ i.name }}" value="{{ i.image_url }}|{{ i.image_hash }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.name }}<br />
@@ -80,7 +80,6 @@ class NubladoOptions(LoggingConfigurable):
         all_images = cachemachine_response["all"]
         images = cachemachine_response["images"]
         images.extend(options_config["images"])
-
         return options_template.render(
             all_images=all_images, images=images, sizes=sizes
         )
