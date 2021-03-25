@@ -58,6 +58,7 @@ class ResourceManager(LoggingConfigurable):
                 "external_groups": external_groups,
                 "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
+                "auto_repo_urls": nc.get("auto_repo_urls"),
             }
 
             self.log.debug(f"Template values={template_values}")
