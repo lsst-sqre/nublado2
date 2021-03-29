@@ -26,15 +26,20 @@ options_template = Template(
 <tr>
 
 <td width="50%">
+<!-- For the listed images not in the dropdown, the value we send along
+ is the image spec concatenated to the image hash with a pipe character;
+ this lets us pass the image hash down to the container.  We don't know
+ the hashes for the images in the dropdown, and it would take many more
+ calls to the repository to fetch them. -->
 {% for i in images %}
-    <input type="radio" name="image"
+    <input type="radio" name="image_info"
      id="{{ i.name }}" value="{{ i.image_url }}|{{ i.image_hash }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.name }}<br />
 {% endfor %}
 
-    <input type="radio" name="image" id="image_tag" value="image_tag">
+    <input type="radio" name="image_info" id="image_tag" value="image_tag">
     Select historical image:<br />
     <select name="image_tag">
     {% for i in all_images %}

@@ -24,8 +24,8 @@ class NubladoHooks(LoggingConfigurable):
         # Each parameter comes back as a list, even if only one is
         # selected.
         size_name = options["size"][0]
-        image_spec = options["image"][0]
-        image_name = image_spec.split("|")[0]
+        image_info = options["image_info"][0]
+        image_name = image_info.split("|")[0]
         image_tag = options["image_tag"][0]
 
         # If the user selected one of the images in the dropdown,
