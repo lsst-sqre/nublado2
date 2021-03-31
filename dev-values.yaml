@@ -134,6 +134,7 @@ config:
         ACCESS_TOKEN: "{{ token }}"
         IMAGE_TAG:  "{{ image_tag }}"
         IMAGE_HASH: "{{ image_hash }}"
+        IMAGE_DESC: "{{ image_desc }}"
     - apiVersion: v1
       kind: ConfigMap
       metadata:

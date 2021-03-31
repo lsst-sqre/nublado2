@@ -5,7 +5,7 @@ from traitlets.config import LoggingConfigurable
 
 from nublado2.nublado_config import NubladoConfig
 from nublado2.options import NubladoOptions
-from nublado2.resourcemgr import ResourceManager
+from nublado2.resourcemgr import ImageInfo, ResourceManager
 
 
 class NubladoHooks(LoggingConfigurable):
@@ -24,21 +24,17 @@ class NubladoHooks(LoggingConfigurable):
         # Each parameter comes back as a list, even if only one is
         # selected.
         size_name = options["size"][0]
-        image_info = options["image_info"][0]
-        image_name = image_info.split("|")[0]
-        image_tag = options["image_tag"][0]
+        img_list_str = options["image_list"][0]
+        img_dropdown_str = options["image_dropdown"][0]
+        image_info = ImageInfo(img_list_str, img_dropdown_str)
+        image_spec = image_info.get_spec()
 
-        # If the user selected one of the images in the dropdown,
-        # use image.
-        if image_name == "image_tag":
-            image_name = image_tag
-
-        # Take size and image names, which are returned as form data,
+        # Take size and image spec, which are returned as form data,
         # look up associated values, and configure the spawner.
         # This will help set up the created lab pod.
         nc = NubladoConfig()
         (cpu, ram) = nc.lookup_size(size_name)
-        spawner.image = image_name
+        spawner.image = image_spec
         spawner.debug = options.get("debug_enabled", False)
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu

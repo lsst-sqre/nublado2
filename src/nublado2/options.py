@@ -26,24 +26,33 @@ options_template = Template(
 <tr>
 
 <td width="50%">
-<!-- For the listed images not in the dropdown, the value we send along
- is the image spec concatenated to the image hash with a pipe character;
- this lets us pass the image hash down to the container.  We don't know
- the hashes for the images in the dropdown, and it would take many more
- calls to the repository to fetch them. -->
+<!-- The values returned from the form are in the form of a pipe-separated
+string.  The first value is the Docker specification of the image.  The
+second value is the human-friendly description of the image.  The third value
+is the hash, if known (if not, the following string will be zero-length).
+
+If the dropdown for historical images is used, the value in the image_info
+radio button will be "image_from_dropdown||" and the class into which
+these results are received will know to use, rather than ignore, the value
+coming from the image_dropdown field instead.
+
+That field will be in the same form, with the same values, although the
+description is slightly less human friendly.
+-->
 {% for i in images %}
-    <input type="radio" name="image_info"
-     id="{{ i.name }}" value="{{ i.image_url }}|{{ i.image_hash }}"
+    <input type="radio" name="image_list"
+     id="{{ i.name }}" value="{{ i.image_url }}|{{ i.name}}|{{ i.image_hash }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.name }}<br />
 {% endfor %}
 
-    <input type="radio" name="image_info" id="image_tag" value="image_tag">
+    <input type="radio" name="image_list" id="image_from_dropdown"
+        value="image_from_dropdown||">
     Select historical image:<br />
-    <select name="image_tag">
+    <select name="image_dropdown">
     {% for i in all_images %}
-        <option value="{{ i.image_url }}">{{ i.name }}</option>
+        <option value="{{ i.image_url }}|{{ i.name }}|">{{ i.name }}</option>
     {% endfor %}
     </select>
 </td>
