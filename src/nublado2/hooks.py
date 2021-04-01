@@ -5,8 +5,9 @@ from traitlets.config import LoggingConfigurable
 
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
-from nublado2.options import DROPDOWN_SENTINEL_VALUE, NubladoOptions
+from nublado2.options import NubladoOptions
 from nublado2.resourcemgr import ResourceManager
+from nublado2.selectedoptions import SelectedOptions
 
 
 class NubladoHooks(LoggingConfigurable):
@@ -15,32 +16,14 @@ class NubladoHooks(LoggingConfigurable):
         self.optionsform = NubladoOptions()
 
     async def pre_spawn(self, spawner: Spawner) -> None:
-        user = spawner.user.name
-        options = spawner.user_options
+        options = SelectedOptions(spawner.user_options)
         self.log.debug(
-            f"Pre-spawn hook called for {user} with options {options}"
+            f"Pre-spawn called for {spawner.user.name} with options {options}"
         )
 
-        # Look up what the user selected on the options form.
-        # Each parameter comes back as a list, even if only one is
-        # selected.
-        size_name = options["size"][0]
-        img_list_str = options["image_list"][0]
-        img_dropdown_str = options["image_dropdown"][0]
-        if img_list_str == DROPDOWN_SENTINEL_VALUE:
-            image_info = ImageInfo.from_packed_string(img_dropdown_str)
-        else:
-            image_info = ImageInfo.from_packed_string(img_list_str)
-
-        # Take size and image info, which are returned as form data,
-        # look up associated values, and configure the spawner.
-        # This will help set up the created lab pod.
-        nc = NubladoConfig()
-        (cpu, ram) = nc.lookup_size(size_name)
-        spawner.image = image_info.reference
-        spawner.debug = options.get("debug_enabled", False)
-        spawner.mem_limit = ram
-        spawner.cpu_limit = cpu
+        spawner.image = options.image_info.reference
+        spawner.mem_limit = options.ram
+        spawner.cpu_limit = options.cpu
 
         auth_state = await spawner.user.get_auth_state()
 
@@ -55,7 +38,7 @@ class NubladoHooks(LoggingConfigurable):
         # which is useful for dask.
         spawner.service_account = f"{spawner.user.name}-serviceaccount"
 
-        await self.resourcemgr.create_user_resources(spawner, image_info)
+        await self.resourcemgr.create_user_resources(spawner, options)
 
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name

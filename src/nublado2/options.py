@@ -61,7 +61,11 @@ options_template = Template(
 
     <br>
     <input type="checkbox"
-     name="enable_debug" value="true">Enable debug logs<br>
+     name="enable_debug" value="true">
+        Enable debug logs<br>
+    <input type="checkbox"
+     name="clear_dotlocal" value="true">
+        Clear <tt>.local</tt> directory (caution!)<br>
 </td>
 
 </tr>
