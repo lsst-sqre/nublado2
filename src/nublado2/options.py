@@ -5,8 +5,10 @@ from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
-from nublado2.imageinfo import ImageInfo, dropdown_fake_image
+from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
+
+DROPDOWN_SENTINEL_VALUE = "use_image_from_dropdown"
 
 options_template = Template(
     """
@@ -34,17 +36,16 @@ options_template = Template(
      id="{{ i.display_name }}" value="{{ i.packed_string }}"
      {% if loop.first %} checked {% endif %}
     >
-    {{ i.name }}<br />
+    {{ i.display_name }}<br />
 {% endfor %}
 
     <input type="radio" name="image_list"
-        id="{{ dropdown_fake_image.display_name }}"
-        value="dropdown_fake_image.packed_string">
+        id="{{ dropdown_sentinel }}"
+        value="{{ dropdown_sentinel }}">
     Select historical image:<br />
     <select name="image_dropdown">
     {% for i in all_images %}
-        <option id="{{ i.display_name }}"
-            value="{{ i.packed_string }}">{{ i.display_name }}</option>
+        <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
     </select>
 </td>
@@ -83,26 +84,19 @@ class NubladoOptions(LoggingConfigurable):
 
         cachemachine_response = await self._get_images_from_url(images_url)
 
-        all_imageinfos = []
-        # Can't do this inside a comprehension (at least not without some
-        #  godawful lambda thing) since ImageInfo() fills its fields
-        #  separately rather than in the constructor
-        for img in cachemachine_response["all"]:
-            entry = ImageInfo()
-            entry.from_cachemachine_entry(img)
-            all_imageinfos.append(entry)
+        all_imageinfos = [
+            ImageInfo.from_cachemachine_entry(img)
+            for img in cachemachine_response["all"]
+        ]
         # Start with the cachemachine response, then extend it with
         #  contents of options_config
         cached_images = cachemachine_response["images"]
         cached_images.extend(options_config["images"])
-        cached_imageinfos = []
-        for img in cached_images:
-            entry = ImageInfo()
-            entry.from_cachemachine_entry(img)
-            cached_imageinfos.append(entry)
-        fake_image = dropdown_fake_image()
+        cached_imageinfos = [
+            ImageInfo.from_cachemachine_entry(img) for img in cached_images
+        ]
         return options_template.render(
-            dropdown_fake_image=fake_image,
+            dropdown_sentinel=DROPDOWN_SENTINEL_VALUE,
             cached_images=cached_imageinfos,
             all_images=all_imageinfos,
             sizes=sizes,
