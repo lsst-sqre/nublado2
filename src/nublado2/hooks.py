@@ -3,9 +3,10 @@ from typing import Any, Dict
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
+from nublado2.imageinfo import ImageInfo, dropdown_fake_image
 from nublado2.nublado_config import NubladoConfig
 from nublado2.options import NubladoOptions
-from nublado2.resourcemgr import ImageInfo, ResourceManager
+from nublado2.resourcemgr import ResourceManager
 
 
 class NubladoHooks(LoggingConfigurable):
@@ -26,15 +27,20 @@ class NubladoHooks(LoggingConfigurable):
         size_name = options["size"][0]
         img_list_str = options["image_list"][0]
         img_dropdown_str = options["image_dropdown"][0]
-        image_info = ImageInfo(img_list_str, img_dropdown_str)
-        image_spec = image_info.get_spec()
+        image_info = ImageInfo()
+        image_info.from_packed_string(img_list_str)
+        fake_image = dropdown_fake_image()
+        # Was the fake image (to signal "use the dropdown") requested?
+        if image_info.packed_string == fake_image.packed_string:
+            # Then replace the image info from the dropdown instead.
+            image_info.from_packed_string(img_dropdown_str)
 
-        # Take size and image spec, which are returned as form data,
+        # Take size and image info, which are returned as form data,
         # look up associated values, and configure the spawner.
         # This will help set up the created lab pod.
         nc = NubladoConfig()
         (cpu, ram) = nc.lookup_size(size_name)
-        spawner.image = image_spec
+        spawner.image = image_info.reference
         spawner.debug = options.get("debug_enabled", False)
         spawner.mem_limit = ram
         spawner.cpu_limit = cpu
@@ -52,7 +58,7 @@ class NubladoHooks(LoggingConfigurable):
         # which is useful for dask.
         spawner.service_account = f"{spawner.user.name}-serviceaccount"
 
-        await self.resourcemgr.create_user_resources(spawner)
+        await self.resourcemgr.create_user_resources(spawner, image_info)
 
     def post_stop(self, spawner: Spawner) -> None:
         user = spawner.user.name

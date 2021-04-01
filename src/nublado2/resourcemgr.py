@@ -13,6 +13,7 @@ from ruamel import yaml
 from ruamel.yaml import RoundTripDumper, RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
+from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 
 config.load_incluster_config()
@@ -29,7 +30,9 @@ class ResourceManager(LoggingConfigurable):
     #  authorization needs
     http_client = aiohttp.ClientSession()
 
-    async def create_user_resources(self, spawner: Spawner) -> None:
+    async def create_user_resources(
+        self, spawner: Spawner, image_info: ImageInfo
+    ) -> None:
         """Create the user resources for this spawning session."""
         try:
             await self._request_homedir_provisioning(spawner)
@@ -51,12 +54,6 @@ class ResourceManager(LoggingConfigurable):
 
             # Retrieve image tag and corresponding hash (if any)
             # These come back from the options form as one-item lists
-            img_list_str = spawner.user_options["image_list"][0]
-            img_dropdown_str = spawner.user_options["image_dropdown"][0]
-            image_info = ImageInfo(img_list_str, img_dropdown_str)
-            img_tag = image_info.get_tag()
-            img_hash = image_info.get_hash()
-            img_desc = image_info.get_desc()
 
             template_values = {
                 "user_namespace": spawner.namespace,
@@ -68,9 +65,7 @@ class ResourceManager(LoggingConfigurable):
                 "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
                 "auto_repo_urls": nc.get("auto_repo_urls"),
-                "image_tag": img_tag,
-                "image_hash": img_hash,
-                "image_desc": img_desc,
+                "image_info": image_info,
             }
 
             self.log.debug(f"Template values={template_values}")
@@ -206,53 +201,3 @@ class ResourceManager(LoggingConfigurable):
         of resources to delete, especially when new things may be
         dynamically created outside of the hub, like dask."""
         self.k8s_client.delete_namespace(name=namespace)
-
-
-class ImageInfo(object):
-    """Take the strings that come out of the image form as constructors:
-    list form first, and dropdown form second.
-
-    These strings will be pipe-separated fields whose contents are:
-    * Docker image spec
-    * Human-friendly image description
-    * Image hash, if known, or the empty string.
-
-    If the image was chosen from the dropdown, the first field of
-    list_image_info will be "image_from_dropdown", and that will
-    signal that we use dropdown_image_info to populate the object
-    rather than list_image_info.
-
-    This will create an ImageInfo object with methods to get to get the image
-    spec, tag, description, and hash.
-
-    If not known, the hash will be returned as the empty string.
-
-    """
-
-    def __init__(self, list_image_info: str, dropdown_image_info: str) -> None:
-        image_fields = list_image_info.split("|")
-        assert len(image_fields) == 3
-        if image_fields[0] == "image_from_dropdown":
-            image_fields = dropdown_image_info.split("|")
-            assert len(image_fields) == 3
-        self.image_spec = image_fields[0]
-        self.image_desc = image_fields[1]
-        self.image_hash = image_fields[2]
-        # The tag is what's after the colon in the image spec
-        self.image_tag = self.image_spec.split(":")[-1]
-
-    def get_spec(self) -> str:
-        """Return the Docker image spec."""
-        return self.image_spec
-
-    def get_desc(self) -> str:
-        """Return the human-friendly image description."""
-        return self.image_desc
-
-    def get_hash(self) -> str:
-        """Return the image hash, if known, or empty string."""
-        return self.image_hash
-
-    def get_tag(self) -> str:
-        """Return the image tag."""
-        return self.image_tag

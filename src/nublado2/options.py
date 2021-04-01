@@ -5,6 +5,7 @@ from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
+from nublado2.imageinfo import ImageInfo, dropdown_fake_image
 from nublado2.nublado_config import NubladoConfig
 
 options_template = Template(
@@ -26,33 +27,24 @@ options_template = Template(
 <tr>
 
 <td width="50%">
-<!-- The values returned from the form are in the form of a pipe-separated
-string.  The first value is the Docker specification of the image.  The
-second value is the human-friendly description of the image.  The third value
-is the hash, if known (if not, the following string will be zero-length).
-
-If the dropdown for historical images is used, the value in the image_info
-radio button will be "image_from_dropdown||" and the class into which
-these results are received will know to use, rather than ignore, the value
-coming from the image_dropdown field instead.
-
-That field will be in the same form, with the same values, although the
-description is slightly less human friendly.
+<!--
 -->
-{% for i in images %}
+{% for i in cached_images %}
     <input type="radio" name="image_list"
-     id="{{ i.name }}" value="{{ i.image_url }}|{{ i.name}}|{{ i.image_hash }}"
+     id="{{ i.display_name }}" value="{{ i.packed_string }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.name }}<br />
 {% endfor %}
 
-    <input type="radio" name="image_list" id="image_from_dropdown"
-        value="image_from_dropdown||">
+    <input type="radio" name="image_list"
+        id="{{ dropdown_fake_image.display_name }}"
+        value="dropdown_fake_image.packed_string">
     Select historical image:<br />
     <select name="image_dropdown">
     {% for i in all_images %}
-        <option value="{{ i.image_url }}|{{ i.name }}|">{{ i.name }}</option>
+        <option id="{{ i.display_name }}"
+            value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
     </select>
 </td>
@@ -91,11 +83,29 @@ class NubladoOptions(LoggingConfigurable):
 
         cachemachine_response = await self._get_images_from_url(images_url)
 
-        all_images = cachemachine_response["all"]
-        images = cachemachine_response["images"]
-        images.extend(options_config["images"])
+        all_imageinfos = []
+        # Can't do this inside a comprehension (at least not without some
+        #  godawful lambda thing) since ImageInfo() fills its fields
+        #  separately rather than in the constructor
+        for img in cachemachine_response["all"]:
+            entry = ImageInfo()
+            entry.from_cachemachine_entry(img)
+            all_imageinfos.append(entry)
+        # Start with the cachemachine response, then extend it with
+        #  contents of options_config
+        cached_images = cachemachine_response["images"]
+        cached_images.extend(options_config["images"])
+        cached_imageinfos = []
+        for img in cached_images:
+            entry = ImageInfo()
+            entry.from_cachemachine_entry(img)
+            cached_imageinfos.append(entry)
+        fake_image = dropdown_fake_image()
         return options_template.render(
-            all_images=all_images, images=images, sizes=sizes
+            dropdown_fake_image=fake_image,
+            cached_images=cached_imageinfos,
+            all_images=all_imageinfos,
+            sizes=sizes,
         )
 
     async def _get_images_from_url(

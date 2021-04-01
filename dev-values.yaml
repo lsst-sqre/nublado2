@@ -132,9 +132,8 @@ config:
         EXTERNAL_USER: "{{ user }}"
         EXTERNAL_UID: "{{ uid }}"
         ACCESS_TOKEN: "{{ token }}"
-        IMAGE_TAG:  "{{ image_tag }}"
-        IMAGE_HASH: "{{ image_hash }}"
-        IMAGE_DESC: "{{ image_desc }}"
+        IMAGE_DIGEST: "{{ image_info.digest }}"
+        IMAGE_DESCRIPTION: "{{ image_info.description }}"
     - apiVersion: v1
       kind: ConfigMap
       metadata:
