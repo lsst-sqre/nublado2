@@ -39,6 +39,13 @@ class HubConfig(LoggingConfigurable):
             "envFrom": [{"configMapRef": {"name": "lab-environment"}}]
         }
 
+        # If the image is prepulled, this will be fast.  If it isn't...
+        # sure, it would be nice if images, once tagged and pushed were
+        # immutable, but they're not.  T&S in particular occasionally
+        # requests rebuilds, and experimental builds often go through
+        # many iterations.
+        c.KubeSpawner.image_pull_policy = "Always"
+
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
 

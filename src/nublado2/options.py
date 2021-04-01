@@ -5,7 +5,10 @@ from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
+from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
+
+DROPDOWN_SENTINEL_VALUE = "use_image_from_dropdown"
 
 options_template = Template(
     """
@@ -26,19 +29,23 @@ options_template = Template(
 <tr>
 
 <td width="50%">
-{% for i in images %}
-    <input type="radio" name="image"
-     id="{{ i.name }}" value="{{ i.image_url }}"
+<!--
+-->
+{% for i in cached_images %}
+    <input type="radio" name="image_list"
+     id="{{ i.display_name }}" value="{{ i.packed_string }}"
      {% if loop.first %} checked {% endif %}
     >
-    {{ i.name }}<br />
+    {{ i.display_name }}<br />
 {% endfor %}
 
-    <input type="radio" name="image" id="image_tag" value="image_tag">
+    <input type="radio" name="image_list"
+        id="{{ dropdown_sentinel }}"
+        value="{{ dropdown_sentinel }}">
     Select historical image:<br />
-    <select name="image_tag">
+    <select name="image_dropdown">
     {% for i in all_images %}
-        <option value="{{ i.image_url }}">{{ i.name }}</option>
+        <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
     </select>
 </td>
@@ -77,12 +84,22 @@ class NubladoOptions(LoggingConfigurable):
 
         cachemachine_response = await self._get_images_from_url(images_url)
 
-        all_images = cachemachine_response["all"]
-        images = cachemachine_response["images"]
-        images.extend(options_config["images"])
-
+        all_imageinfos = [
+            ImageInfo.from_cachemachine_entry(img)
+            for img in cachemachine_response["all"]
+        ]
+        # Start with the cachemachine response, then extend it with
+        #  contents of options_config
+        cached_images = cachemachine_response["images"]
+        cached_images.extend(options_config["images"])
+        cached_imageinfos = [
+            ImageInfo.from_cachemachine_entry(img) for img in cached_images
+        ]
         return options_template.render(
-            all_images=all_images, images=images, sizes=sizes
+            dropdown_sentinel=DROPDOWN_SENTINEL_VALUE,
+            cached_images=cached_imageinfos,
+            all_images=all_imageinfos,
+            sizes=sizes,
         )
 
     async def _get_images_from_url(

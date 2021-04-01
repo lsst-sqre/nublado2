@@ -13,6 +13,7 @@ from ruamel import yaml
 from ruamel.yaml import RoundTripDumper, RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
+from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 
 config.load_incluster_config()
@@ -29,7 +30,9 @@ class ResourceManager(LoggingConfigurable):
     #  authorization needs
     http_client = aiohttp.ClientSession()
 
-    async def create_user_resources(self, spawner: Spawner) -> None:
+    async def create_user_resources(
+        self, spawner: Spawner, image_info: ImageInfo
+    ) -> None:
         """Create the user resources for this spawning session."""
         try:
             await self._request_homedir_provisioning(spawner)
@@ -49,6 +52,9 @@ class ResourceManager(LoggingConfigurable):
                 [f'{g["name"]}:{g["id"]}' for g in groups]
             )
 
+            # Retrieve image tag and corresponding hash (if any)
+            # These come back from the options form as one-item lists
+
             template_values = {
                 "user_namespace": spawner.namespace,
                 "user": spawner.user.name,
@@ -59,6 +65,7 @@ class ResourceManager(LoggingConfigurable):
                 "base_url": nc.get("base_url"),
                 "dask_yaml": await self._build_dask_template(spawner),
                 "auto_repo_urls": nc.get("auto_repo_urls"),
+                "image_info": image_info,
             }
 
             self.log.debug(f"Template values={template_values}")
