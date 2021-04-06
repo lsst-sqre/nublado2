@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
 from nublado2.imageinfo import ImageInfo
-from nublado2.options import DROPDOWN_SENTINEL_VALUE
 from nublado2.nublado_config import NubladoConfig
+from nublado2.options import DROPDOWN_SENTINEL_VALUE
 
 
 class SelectedOptions:

@@ -3,8 +3,6 @@ from typing import Any, Dict
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
-from nublado2.imageinfo import ImageInfo
-from nublado2.nublado_config import NubladoConfig
 from nublado2.options import NubladoOptions
 from nublado2.resourcemgr import ResourceManager
 from nublado2.selectedoptions import SelectedOptions
