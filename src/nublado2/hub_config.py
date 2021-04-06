@@ -30,6 +30,17 @@ class HubConfig(LoggingConfigurable):
 
         c.KubeSpawner.enable_user_namespaces = True
 
+        # This is how long the hub will wait for a lab pod to start.
+        # For large images, this also includes the time it takes to
+        # pull the docker image and start it.
+        c.KubeSpawner.start_timeout = 10 * 60  # 10 minutes
+
+        # This is how long to wait after the lab pod starts before
+        # the hub will give up waiting for the lab to start.  When
+        # using the debug flag, sometimes this can take longer than
+        # the default, which is 30 seconds.
+        c.KubeSpawner.http_timeout = 90
+
         # This is put in the lab pod, and tells kubernetes to
         # use all the key: values found in the lab-environment
         # configmap as environment variables for the lab
