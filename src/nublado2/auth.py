@@ -151,7 +151,7 @@ class GafaelfawrLoginHandler(BaseHandler):
             raise web.HTTPError(401, "No request token")
 
         # Retrieve the token metadata.
-        base_url = NubladoConfig().get().get("base_url")
+        base_url = NubladoConfig().base_url
         if not base_url:
             raise web.HTTPError(500, "base_url not set in configuration")
         api_url = url_path_join(base_url, "/auth/analyze")

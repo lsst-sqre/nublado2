@@ -91,22 +91,21 @@ jupyterhub:
 
 config:
   base_url: "https://minikube.lsst.codes"
-  options_form:
-    images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
-    images: []
-    sizes:
-      - name: Tiny
-        cpu: .5
-        ram: 1536M
-      - name: Small
-        cpu: 1
-        ram: 3072M
-      - name: Medium
-        cpu: 2
-        ram: 6144M
-      - name: Large
-        cpu: 4
-        ram: 12288M
+  images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
+  pinned_images: []
+  sizes:
+    - name: Tiny
+      cpu: 0.5
+      ram: 1536M
+    - name: Small
+      cpu: 1
+      ram: 3072M
+    - name: Medium
+      cpu: 2
+      ram: 6144M
+    - name: Large
+      cpu: 4
+      ram: 12288M
   user_resources:
     - apiVersion: v1
       kind: Namespace
@@ -127,7 +126,7 @@ config:
         SODA_ROUTE: /api/image/soda
         WORKFLOW_ROUTE: /wf
         NO_SUDO: 'TRUE'
-        AUTO_REPO_URLS: https://github.com/lsst-sqre/notebook-demo
+        AUTO_REPO_URLS: "{{ options.auto_repo_urls }}"
         EXTERNAL_GROUPS: "{{ external_groups }}"
         EXTERNAL_USER: "{{ user }}"
         EXTERNAL_UID: "{{ uid }}"

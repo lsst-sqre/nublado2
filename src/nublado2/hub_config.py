@@ -16,7 +16,7 @@ class HubConfig(LoggingConfigurable):
         self.log.info("Configuring JupyterHub Nublado2 style")
         self.log.debug(f"JupyterHub configuration starting as: {c}")
 
-        nc = NubladoConfig().get()
+        nc = NubladoConfig()
         self.log.debug(f"Nublado Config is:\n{nc}")
 
         c.JupyterHub.hub_connect_url = self._get_hub_connect_url()

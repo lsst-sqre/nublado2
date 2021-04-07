@@ -43,7 +43,7 @@ class ResourceManager(LoggingConfigurable):
             auth_state = await spawner.user.get_auth_state()
             self.log.debug(f"Auth state={auth_state}")
 
-            nc = NubladoConfig().get()
+            nc = NubladoConfig()
             groups = auth_state["groups"]
 
             # Build a comma separated list of group:gid
@@ -62,15 +62,14 @@ class ResourceManager(LoggingConfigurable):
                 "token": auth_state["token"],
                 "groups": groups,
                 "external_groups": external_groups,
-                "base_url": nc.get("base_url"),
+                "base_url": nc.base_url,
                 "dask_yaml": await self._build_dask_template(spawner),
-                "auto_repo_urls": nc.get("auto_repo_urls"),
+                "auto_repo_urls": nc.auto_repo_urls,
                 "options": options,
             }
 
             self.log.debug(f"Template values={template_values}")
-            resources = nc.get("user_resources", [])
-            for r in resources:
+            for r in nc.user_resources:
                 t_yaml = yaml.dump(r, Dumper=RoundTripDumper)
                 self.log.debug(f"Resource template:\n{t_yaml}")
                 t = Template(t_yaml)
@@ -86,9 +85,8 @@ class ResourceManager(LoggingConfigurable):
 
     async def _request_homedir_provisioning(self, spawner: Spawner) -> None:
         """Submit a request for provisioning via Moneypenny."""
-        nc = NubladoConfig().get()
+        nc = NubladoConfig()
         hc = self.http_client
-        base_url = nc.get("base_url")
         uname = spawner.user.name
         auth_state = await spawner.user.get_auth_state()
         dossier = {
@@ -97,13 +95,13 @@ class ResourceManager(LoggingConfigurable):
             "groups": auth_state["groups"],
         }
         token = await self._mint_admin_token()
-        endpt = f"{base_url}/moneypenny/commission"
+        endpt = f"{nc.base_url}/moneypenny/commission"
         auth = {"Authorization": f"Bearer {token}"}
         self.log.debug(f"Posting dossier {dossier} to {endpt}")
         resp = await hc.post(endpt, json=dossier, headers=auth)
         self.log.debug(f"POST got {resp.status}")
         resp.raise_for_status()
-        route = f"{base_url}/moneypenny/{uname}"
+        route = f"{nc.base_url}/moneypenny/{uname}"
         count = 0
 
         async def _check_moneypenny_completion() -> bool:
@@ -132,22 +130,18 @@ class ResourceManager(LoggingConfigurable):
         """Create a token with exec:admin scope, signed as if Gafaelfawr had
         created it, in order to submit orders to Moneypenny.
         """
-        nc = NubladoConfig().get()
+        nc = NubladoConfig()
         template_file = os.path.join(
             os.path.dirname(__file__), "static/moneypenny-jwt-template.json"
         )
-        base_url = nc.get("base_url")
-        signing_key_path = nc.get("signing_key_path")
-        assert isinstance(signing_key_path, str)
-        with open(signing_key_path, "r") as f:
-            signing_key = f.read()
-            current_time = int(
-                datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-            )
+        current_time = int(
+            datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        )
         with open(template_file, "r") as f:
             token_template = Template(f.read())
+
         token_data = {
-            "environment_url": base_url,
+            "environment_url": nc.base_url,
             "username": "moneypenny",
             "uidnumber": 1007,
             "issue_time": current_time,
@@ -157,7 +151,7 @@ class ResourceManager(LoggingConfigurable):
         token_dict = json.loads(rendered_token)
         token = jwt.encode(
             token_dict,
-            key=signing_key,
+            key=nc.signing_key,
             headers={"kid": "reissuer"},
             algorithm="RS256",
         )

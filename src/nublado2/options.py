@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from aiohttp import ClientSession
 from jinja2 import Template
@@ -81,39 +81,38 @@ session = ClientSession()
 
 class NubladoOptions(LoggingConfigurable):
     async def show_options_form(self, spawner: Spawner) -> str:
-        options_config = NubladoConfig().get()["options_form"]
-        sizes = options_config["sizes"]
+        nc = NubladoConfig()
 
-        images_url = options_config.get("images_url")
+        (cached_images, all_images) = await self._get_images_from_url(
+            nc.images_url
+        )
+        cached_images.extend(nc.pinned_images)
 
-        cachemachine_response = await self._get_images_from_url(images_url)
-
-        all_imageinfos = [
-            ImageInfo.from_cachemachine_entry(img)
-            for img in cachemachine_response["all"]
-        ]
-        # Start with the cachemachine response, then extend it with
-        #  contents of options_config
-        cached_images = cachemachine_response["images"]
-        cached_images.extend(options_config["images"])
-        cached_imageinfos = [
-            ImageInfo.from_cachemachine_entry(img) for img in cached_images
-        ]
         return options_template.render(
             dropdown_sentinel=DROPDOWN_SENTINEL_VALUE,
-            cached_images=cached_imageinfos,
-            all_images=all_imageinfos,
-            sizes=sizes,
+            cached_images=cached_images,
+            all_images=all_images,
+            sizes=nc.sizes.values(),
         )
 
     async def _get_images_from_url(
         self, url: Optional[str]
-    ) -> Dict[str, List[Dict[str, str]]]:
+    ) -> (List[ImageInfo], List[ImageInfo]):
         if not url:
-            return {"all": [], "images": []}
+            return ([], [])
 
         r = await session.get(url)
         if r.status != 200:
             raise Exception(f"Error {r.status} from {url}")
 
-        return await r.json()
+        body = await r.json()
+
+        cached_images = [
+            ImageInfo.from_cachemachine_entry(img) for img in body["images"]
+        ]
+
+        all_images = [
+            ImageInfo.from_cachemachine_entry(img) for img in body["all"]
+        ]
+
+        return (cached_images, all_images)
