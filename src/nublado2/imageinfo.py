@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict
 
 FIELD_DELIMITER = "|"
@@ -31,14 +31,18 @@ class ImageInfo:
     Example: "sha256:419c4b7e14603711b25fa9e0569460a753c4b2449fe275bb5f89743b01794a30"  # noqa: E501
     """
 
-    packed_string: str = field(init=False, default="")
-    """packed_string is the form in which the image info is packed into the
-    JupyterHub options form and in which is is returned as the form
-    selection.  It is specification, display_name, and digest
-    concatenated with the pipe character.
+    @property
+    def packed_string(self) -> str:
+        """packed_string is the form in which the image info is packed into the
+        JupyterHub options form and in which is is returned as the form
+        selection.  It is specification, display_name, and digest
+        concatenated with the pipe character.
 
-    Example: "registry.hub.docker.com/lsstsqre/sciplat-lab:w_2021_13|Weekly 13|sha256:419c4b7e14603711b25fa9e0569460a753c4b2449fe275bb5f89743b01794a30"  # noqa: E501
-    """
+        Example: "registry.hub.docker.com/lsstsqre/sciplat-lab:w_2021_13|Weekly 13|sha256:419c4b7e14603711b25fa9e0569460a753c4b2449fe275bb5f89743b01794a30"  # noqa: E501
+        """
+        return FIELD_DELIMITER.join(
+            [self.reference, self.display_name, self.digest]
+        )
 
     @classmethod
     def from_cachemachine_entry(cls, entry: CachemachineEntry) -> "ImageInfo":
@@ -66,12 +70,4 @@ class ImageInfo:
             )
         return cls(
             reference=fields[0], display_name=fields[1], digest=fields[2]
-        )
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "packed_string", self._pack())
-
-    def _pack(self) -> str:
-        return FIELD_DELIMITER.join(
-            [self.reference, self.display_name, self.digest]
         )
