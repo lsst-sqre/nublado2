@@ -9,8 +9,8 @@ from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 
+from nublado2.http import get_session
 from nublado2.nublado_config import NubladoConfig
-from nublado2.options import session
 
 if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple, Type, Union
@@ -155,6 +155,7 @@ class GafaelfawrLoginHandler(BaseHandler):
         if not base_url:
             raise web.HTTPError(500, "base_url not set in configuration")
         api_url = url_path_join(base_url, "/auth/analyze")
+        session = await get_session()
         resp = await session.post(api_url, data={"token": token})
         if resp.status != 200:
             raise web.HTTPError(500, "Cannot reach token analysis API")

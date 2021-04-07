@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-from aiohttp import ClientSession
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
+from nublado2.http import get_session
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 
@@ -73,11 +73,6 @@ options_template = Template(
 """
 )
 
-# Don't have this be a member of NubladoOptions, we should
-# share this connection pool.  Also the LoggingConfigurable
-# will try to pickle it to json, and it can't pickle a session.
-session = ClientSession()
-
 
 class NubladoOptions(LoggingConfigurable):
     async def show_options_form(self, spawner: Spawner) -> str:
@@ -97,10 +92,11 @@ class NubladoOptions(LoggingConfigurable):
 
     async def _get_images_from_url(
         self, url: Optional[str]
-    ) -> (List[ImageInfo], List[ImageInfo]):
+    ) -> Tuple[List[ImageInfo], List[ImageInfo]]:
         if not url:
             return ([], [])
 
+        session = await get_session()
         r = await session.get(url)
         if r.status != 200:
             raise Exception(f"Error {r.status} from {url}")
