@@ -24,7 +24,7 @@ class NubladoConfig:
             s.name: s
             for s in [
                 LabSize(float(s["cpu"]), s["name"], s["ram"])
-                for s in self._config["options_form"]["sizes"]
+                for s in self._config["sizes"]
             ]
         }
 
