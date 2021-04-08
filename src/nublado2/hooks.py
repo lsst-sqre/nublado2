@@ -20,8 +20,8 @@ class NubladoHooks(LoggingConfigurable):
         )
 
         spawner.image = options.image_info.reference
-        spawner.mem_limit = options.ram
-        spawner.cpu_limit = options.cpu
+        spawner.mem_limit = options.size.ram
+        spawner.cpu_limit = options.size.cpu
 
         auth_state = await spawner.user.get_auth_state()
 

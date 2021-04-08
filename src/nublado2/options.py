@@ -1,10 +1,10 @@
-from typing import Dict, List, Optional
+from typing import List, Optional, Tuple
 
-from aiohttp import ClientSession
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
+from nublado2.http import get_session
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 
@@ -73,47 +73,42 @@ options_template = Template(
 """
 )
 
-# Don't have this be a member of NubladoOptions, we should
-# share this connection pool.  Also the LoggingConfigurable
-# will try to pickle it to json, and it can't pickle a session.
-session = ClientSession()
-
 
 class NubladoOptions(LoggingConfigurable):
     async def show_options_form(self, spawner: Spawner) -> str:
-        options_config = NubladoConfig().get()["options_form"]
-        sizes = options_config["sizes"]
+        nc = NubladoConfig()
 
-        images_url = options_config.get("images_url")
+        (cached_images, all_images) = await self._get_images_from_url(
+            nc.images_url
+        )
+        cached_images.extend(nc.pinned_images)
 
-        cachemachine_response = await self._get_images_from_url(images_url)
-
-        all_imageinfos = [
-            ImageInfo.from_cachemachine_entry(img)
-            for img in cachemachine_response["all"]
-        ]
-        # Start with the cachemachine response, then extend it with
-        #  contents of options_config
-        cached_images = cachemachine_response["images"]
-        cached_images.extend(options_config["images"])
-        cached_imageinfos = [
-            ImageInfo.from_cachemachine_entry(img) for img in cached_images
-        ]
         return options_template.render(
             dropdown_sentinel=DROPDOWN_SENTINEL_VALUE,
-            cached_images=cached_imageinfos,
-            all_images=all_imageinfos,
-            sizes=sizes,
+            cached_images=cached_images,
+            all_images=all_images,
+            sizes=nc.sizes.values(),
         )
 
     async def _get_images_from_url(
         self, url: Optional[str]
-    ) -> Dict[str, List[Dict[str, str]]]:
+    ) -> Tuple[List[ImageInfo], List[ImageInfo]]:
         if not url:
-            return {"all": [], "images": []}
+            return ([], [])
 
+        session = await get_session()
         r = await session.get(url)
         if r.status != 200:
             raise Exception(f"Error {r.status} from {url}")
 
-        return await r.json()
+        body = await r.json()
+
+        cached_images = [
+            ImageInfo.from_cachemachine_entry(img) for img in body["images"]
+        ]
+
+        all_images = [
+            ImageInfo.from_cachemachine_entry(img) for img in body["all"]
+        ]
+
+        return (cached_images, all_images)

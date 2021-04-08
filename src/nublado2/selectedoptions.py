@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from nublado2.imageinfo import ImageInfo
+from nublado2.labsize import LabSize
 from nublado2.nublado_config import NubladoConfig
 from nublado2.options import DROPDOWN_SENTINEL_VALUE
 
@@ -27,7 +28,7 @@ class SelectedOptions:
             self._image_info = ImageInfo.from_packed_string(image_list)
 
         nc = NubladoConfig()
-        (self._cpu, self._ram) = nc.lookup_size(size_name)
+        self._size = nc.sizes[size_name]
 
         self._debug = "TRUE" if "enable_debug" in options else ""
         self._clear_dotlocal = "TRUE" if "clear_dotlocal" in options else ""
@@ -54,14 +55,5 @@ class SelectedOptions:
         return self._image_info
 
     @property
-    def cpu(self) -> float:
-        """Number of vCPUs for the lab pod.  Comes from the size."""
-        return self._cpu
-
-    @property
-    def ram(self) -> str:
-        """Amount of RAM for the lab pod.
-
-        This is in kubernetes format, like 2g or 2048M, and comes
-        from the size."""
-        return self._ram
+    def size(self) -> LabSize:
+        return self._size
