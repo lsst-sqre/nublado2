@@ -64,7 +64,6 @@ class ResourceManager(LoggingConfigurable):
                 "external_groups": external_groups,
                 "base_url": nc.base_url,
                 "dask_yaml": await self._build_dask_template(spawner),
-                "auto_repo_urls": nc.auto_repo_urls,
                 "options": options,
             }
 

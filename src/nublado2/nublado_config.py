@@ -29,11 +29,6 @@ class NubladoConfig:
         }
 
     @property
-    def auto_repo_urls(self) -> str:
-        """A list of URLs of repositories for the lab to clone on start."""
-        return self._config.get("auto_repo_urls", "")
-
-    @property
     def base_url(self) -> str:
         """Base URL for the environment, like https://data.lsst.cloud"""
         return self._config["base_url"]

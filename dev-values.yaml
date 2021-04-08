@@ -126,7 +126,7 @@ config:
         SODA_ROUTE: /api/image/soda
         WORKFLOW_ROUTE: /wf
         NO_SUDO: 'TRUE'
-        AUTO_REPO_URLS: "{{ options.auto_repo_urls }}"
+        AUTO_REPO_URLS: "https://github.com/lsst-sqre/notebook-demo"
         EXTERNAL_GROUPS: "{{ external_groups }}"
         EXTERNAL_USER: "{{ user }}"
         EXTERNAL_UID: "{{ uid }}"
