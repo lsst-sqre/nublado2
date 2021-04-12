@@ -12,6 +12,13 @@ DROPDOWN_SENTINEL_VALUE = "use_image_from_dropdown"
 
 options_template = Template(
     """
+
+<script>
+function selectDropdown() {
+    document.forms['spawn_form'].image_list.value = '{{ dropdown_sentinel }}';
+}
+</script>
+
 <style>
     td {
         border: 1px solid black;
@@ -43,7 +50,7 @@ options_template = Template(
         id="{{ dropdown_sentinel }}"
         value="{{ dropdown_sentinel }}">
     Select historical image:<br />
-    <select name="image_dropdown">
+    <select name="image_dropdown" onchange="selectDropdown()">
     {% for i in all_images %}
         <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
