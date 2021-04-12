@@ -63,3 +63,11 @@ class NubladoConfig:
     def user_resources(self) -> Tuple[Any, ...]:
         """Retrieve a copy of the lab resources templates."""
         return tuple(self._config.get("user_resources", []))
+
+    @property
+    def volumes(self) -> List[Dict[str, Any]]:
+        return list(self._config["volumes"])
+
+    @property
+    def volume_mounts(self) -> List[Dict[str, Any]]:
+        return list(self._config["volume_mounts"])
