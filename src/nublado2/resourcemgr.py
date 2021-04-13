@@ -10,7 +10,7 @@ from jupyterhub.utils import exponential_backoff
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
 from ruamel import yaml
-from ruamel.yaml import RoundTripDumper, RoundTripLoader
+from ruamel.yaml import RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
 from nublado2.nublado_config import NubladoConfig
@@ -65,19 +65,23 @@ class ResourceManager(LoggingConfigurable):
                 "base_url": nc.base_url,
                 "dask_yaml": await self._build_dask_template(spawner),
                 "options": options,
+                "labels": spawner.common_labels,
+                "annotations": spawner.extra_annotations,
             }
 
             self.log.debug(f"Template values={template_values}")
-            for r in nc.user_resources:
-                t_yaml = yaml.dump(r, Dumper=RoundTripDumper)
-                self.log.debug(f"Resource template:\n{t_yaml}")
-                t = Template(t_yaml)
-                templated_yaml = t.render(template_values)
-                self.log.debug(f"Creating resource:\n{templated_yaml}")
-                templated_resource = yaml.load(
-                    templated_yaml, Loader=RoundTripLoader
-                )
-                create_from_dict(self.k8s_api, templated_resource)
+            t = Template(nc.user_resources_template)
+            templated_user_resources = t.render(template_values)
+            self.log.debug("Generated user resources:")
+            self.log.debug(templated_user_resources)
+
+            user_resources = yaml.load(
+                templated_user_resources, Loader=RoundTripLoader
+            )
+
+            for r in user_resources:
+                self.log.debug(f"Creating: {r}")
+                create_from_dict(self.k8s_api, r)
         except Exception:
             self.log.exception("Exception creating user resource!")
             raise

@@ -2,7 +2,7 @@
 
 __all__ = ["NubladoConfig"]
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from ruamel import yaml
 from ruamel.yaml import RoundTripLoader
@@ -60,9 +60,9 @@ class NubladoConfig:
         return dict(self._sizes)
 
     @property
-    def user_resources(self) -> Tuple[Any, ...]:
+    def user_resources_template(self) -> str:
         """Retrieve a copy of the lab resources templates."""
-        return tuple(self._config.get("user_resources", []))
+        return self._config.get("user_resources_template")
 
     @property
     def volumes(self) -> List[Dict[str, Any]]:
