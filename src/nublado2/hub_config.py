@@ -57,6 +57,14 @@ class HubConfig(LoggingConfigurable):
         # many iterations.
         c.KubeSpawner.image_pull_policy = "Always"
 
+        # Helm is pretty weird about not being able to merge dicts
+        # together.  We use the extraVolumes and extraVolumeMounts
+        # for the standard things we create.  We use this other section
+        # to add more volumes without needing to copy the entire set
+        # of volumes and mounts everywhere we use it.
+        c.KubeSpawner.volumes.extend(nc.volumes)
+        c.KubeSpawner.volume_mounts.extend(nc.volume_mounts)
+
         self.log.info("JupyterHub configuration complete")
         self.log.debug(f"JupyterHub configuration is now: {c}")
 
