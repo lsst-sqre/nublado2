@@ -10,12 +10,10 @@
 # Docker image that we use as a base.  However, the plugins that we use
 # are included, since those are not preinstalled in the Docker image.
 
-safir
 aiohttp
 aiodns
 cchardet
 importlib_metadata
-click
 jinja2
 jupyterhub-idle-culler
 pyjwt

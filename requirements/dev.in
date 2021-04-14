@@ -5,7 +5,6 @@
 # After editing, update requirements/dev.txt by running:
 #     make update-deps
 
-aiohttp-devtools
 aioresponses
 pre-commit
 coverage[toml]
@@ -13,7 +12,6 @@ flake8
 mypy
 jupyterhub
 pytest
-pytest-aiohttp
 pytest-asyncio
 tornado
 

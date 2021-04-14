@@ -14,7 +14,3 @@ init:
 
 .PHONY: update
 update: update-deps init
-
-.PHONY: run
-run:
-	adev runserver --app-factory create_app src/nublado2/app.py
