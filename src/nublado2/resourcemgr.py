@@ -97,7 +97,10 @@ class ResourceManager(LoggingConfigurable):
             "uid": int(auth_state["uid"]),
             "groups": auth_state["groups"],
         }
-        token = await self._mint_admin_token()
+        if nc.gafaelfawr_token:
+            token = nc.gafaelfawr_token
+        else:
+            token = await self._mint_admin_token()
         endpt = f"{nc.base_url}/moneypenny/commission"
         auth = {"Authorization": f"Bearer {token}"}
         self.log.debug(f"Posting dossier {dossier} to {endpt}")

@@ -137,8 +137,8 @@ class GafaelfawrLoginHandler(BaseHandler):
         # they needed to be authenticated.
         self.redirect(self.get_next_url(user))
 
-    @staticmethod
-    async def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
+    @classmethod
+    async def _build_auth_info(cls, headers: HTTPHeaders) -> Dict[str, Any]:
         """Construct the authentication information for a user.
 
         Retrieve the token from the headers, use that token to retrieve the
@@ -150,11 +150,43 @@ class GafaelfawrLoginHandler(BaseHandler):
         if not token:
             raise web.HTTPError(401, "No request token")
 
-        # Retrieve the token metadata.
-        base_url = NubladoConfig().base_url
-        if not base_url:
+        config = NubladoConfig()
+        if not config.gafaelfawr_token:
+            return await cls._get_legacy_userinfo(config, token)
+        if not config.base_url:
             raise web.HTTPError(500, "base_url not set in configuration")
-        api_url = url_path_join(base_url, "/auth/analyze")
+
+        # Retrieve the token metadata.
+        api_url = url_path_join(config.base_url, "/auth/api/v1/user-info")
+        session = await get_session()
+        resp = await session.get(
+            api_url, headers={"Authorization": f"bearer {token}"}
+        )
+        if resp.status != 200:
+            raise web.HTTPError(500, "Cannot reach token analysis API")
+        try:
+            auth_state = await resp.json()
+        except Exception:
+            raise web.HTTPError(500, "Cannot get information for token")
+        if "username" not in auth_state or "uid" not in auth_state:
+            raise web.HTTPError(403, "Request token is invalid")
+
+        auth_state["token"] = token
+        if "groups" not in auth_state:
+            auth_state["groups"] = []
+        return {
+            "name": auth_state["username"],
+            "auth_state": auth_state,
+        }
+
+    @staticmethod
+    async def _get_legacy_userinfo(
+        config: NubladoConfig, token: str
+    ) -> Dict[str, Any]:
+        """Get user information from a token for Gafaelfawr 1.x."""
+        if not config.base_url:
+            raise web.HTTPError(500, "base_url not set in configuration")
+        api_url = url_path_join(config.base_url, "/auth/analyze")
         session = await get_session()
         resp = await session.post(api_url, data={"token": token})
         if resp.status != 200:
