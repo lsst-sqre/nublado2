@@ -2,7 +2,7 @@
 
 __all__ = ["NubladoConfig"]
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ruamel import yaml
 from ruamel.yaml import RoundTripLoader
@@ -32,6 +32,15 @@ class NubladoConfig:
     def base_url(self) -> str:
         """Base URL for the environment, like https://data.lsst.cloud"""
         return self._config["base_url"]
+
+    @property
+    def gafaelfawr_token(self) -> Optional[str]:
+        """Retrieve the Gafaelfawr token for moneypenny calls."""
+        try:
+            with open("/etc/keys/gafaelfawr-token") as f:
+                return f.read()
+        except FileNotFoundError:
+            return None
 
     @property
     def images_url(self) -> str:
