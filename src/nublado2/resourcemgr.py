@@ -67,6 +67,7 @@ class ResourceManager(LoggingConfigurable):
                 "options": options,
                 "labels": spawner.common_labels,
                 "annotations": spawner.extra_annotations,
+                "nublado_base_url": spawner.hub.base_url,
             }
 
             self.log.debug(f"Template values={template_values}")
