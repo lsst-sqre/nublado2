@@ -53,7 +53,7 @@ class ImageInfo:
         return cls(
             reference=entry["image_url"],
             display_name=entry["name"],
-            digest=(entry["image_hash"] or ""),
+            digest=entry.get("image_hash", ""),
         )
 
     @classmethod
