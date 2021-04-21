@@ -33,6 +33,16 @@ def test_creation_from_cachemachine_entry() -> None:
     assert img.digest == TEST_DIGEST
 
 
+def test_creation_without_hash() -> None:
+    """Create from a dict like we'd get from cachemachine but with no hash."""
+    entry = dict(**TEST_ENTRY)
+    del entry["image_hash"]
+    img = ImageInfo.from_cachemachine_entry(entry)
+    assert img.reference == TEST_REF
+    assert img.display_name == TEST_DISPLAY_NAME
+    assert img.digest == ""
+
+
 def test_roundtrip() -> None:
     """Create an object from a cachemachine entry, get its packed string,
     create a new object from that, and test that the fields are the same."""
