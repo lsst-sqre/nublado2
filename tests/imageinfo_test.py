@@ -1,6 +1,8 @@
 """Tests for the ImageInfo class.
 """
 
+from typing import Dict, Optional
+
 from nublado2.imageinfo import FIELD_DELIMITER, ImageInfo
 
 TEST_REF = "registry.hub.docker.com/lsstsqre/sciplat-lab:test_version"
@@ -35,8 +37,15 @@ def test_creation_from_cachemachine_entry() -> None:
 
 def test_creation_without_hash() -> None:
     """Create from a dict like we'd get from cachemachine but with no hash."""
-    entry = dict(**TEST_ENTRY)
+    entry: Dict[str, Optional[str]] = dict(**TEST_ENTRY)
     del entry["image_hash"]
+    img = ImageInfo.from_cachemachine_entry(entry)
+    assert img.reference == TEST_REF
+    assert img.display_name == TEST_DISPLAY_NAME
+    assert img.digest == ""
+
+    # The same but with a hash of None.
+    entry["image_hash"] = None
     img = ImageInfo.from_cachemachine_entry(entry)
     assert img.reference == TEST_REF
     assert img.display_name == TEST_DISPLAY_NAME
