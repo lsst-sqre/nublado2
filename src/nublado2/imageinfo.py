@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Dict
+from typing import Mapping, Optional
 
 FIELD_DELIMITER = "|"
 
 # This type is the dict that comes from cachemachine:
 #  https: //github.com/lsst-sqre/cachemachine/blob/4802ab7d78aec27b400f66b9af3324180910476e/src/cachemachine/types.py#L50-L69  # noqa: E501
-CachemachineEntry = Dict[str, str]
+CachemachineEntry = Mapping[str, Optional[str]]
 
 
 @dataclass(frozen=True)
@@ -51,9 +51,9 @@ class ImageInfo:
         """
         # entry uses None, we use empty string for missing digest
         return cls(
-            reference=entry["image_url"],
-            display_name=entry["name"],
-            digest=entry.get("image_hash", ""),
+            reference=entry["image_url"] or "",
+            display_name=entry["name"] or "",
+            digest=entry.get("image_hash", "") or "",
         )
 
     @classmethod
