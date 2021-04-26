@@ -9,8 +9,8 @@ aioresponses
 pre-commit
 coverage[toml]
 flake8
+idna==2.10
 mypy
-jupyterhub
 pytest
 pytest-asyncio
 tornado

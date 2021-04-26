@@ -13,6 +13,7 @@ from ruamel import yaml
 from ruamel.yaml import RoundTripLoader
 from traitlets.config import LoggingConfigurable
 
+from nublado2.crdparser import CRDParser
 from nublado2.nublado_config import NubladoConfig
 from nublado2.selectedoptions import SelectedOptions
 
@@ -25,6 +26,7 @@ class ResourceManager(LoggingConfigurable):
     # LoggingConfigurable base class, so just have them be class variables.
     # Should be safe to share these, and better to have fewer of them.
     k8s_api = client.api_client.ApiClient()
+    custom_api = client.CustomObjectsApi()
     k8s_client = client.CoreV1Api()
     # Same for the http_client: all the hub requests will have the same
     #  authorization needs
@@ -68,9 +70,12 @@ class ResourceManager(LoggingConfigurable):
                 "labels": spawner.common_labels,
                 "annotations": spawner.extra_annotations,
                 "nublado_base_url": spawner.hub.base_url,
+                "butler_secret_path": nc.butler_secret_path,
             }
 
             self.log.debug(f"Template values={template_values}")
+            self.log.debug("Template:")
+            self.log.debug(nc.user_resources_template)
             t = Template(nc.user_resources_template)
             templated_user_resources = t.render(template_values)
             self.log.debug("Generated user resources:")
@@ -85,6 +90,30 @@ class ResourceManager(LoggingConfigurable):
                 create_from_dict(self.k8s_api, r)
         except Exception:
             self.log.exception("Exception creating user resource!")
+            raise
+        try:
+            # CRDs cannot be created with create_from_dict:
+            # https://github.com/kubernetes-client/python/issues/740
+            ct = Template(nc.custom_resources_template)
+            templated_custom_resources = ct.render(template_values)
+            self.log.debug("Generated custom resources:")
+            self.log.debug(templated_custom_resources)
+            custom_resources = yaml.load(
+                templated_custom_resources, Loader=RoundTripLoader
+            )
+            for cr in custom_resources:
+                self.log.debug(f"Creating: {cr}")
+                crd_parser = CRDParser.from_crd_body(cr)
+                self.log.debug(f"CRD_Parser: {crd_parser}")
+                self.custom_api.create_namespaced_custom_object(
+                    body=cr,
+                    group=crd_parser.group,
+                    version=crd_parser.version,
+                    namespace=spawner.namespace,
+                    plural=crd_parser.plural,
+                )
+        except Exception:
+            self.log.exception("Exception creating custom resource!")
             raise
 
     async def _request_homedir_provisioning(self, spawner: Spawner) -> None:

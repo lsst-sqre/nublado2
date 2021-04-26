@@ -74,9 +74,18 @@ class NubladoConfig:
         return self._config.get("user_resources_template")
 
     @property
+    def custom_resources_template(self) -> str:
+        """Retrieve a copy of the lab custom resource templates."""
+        return self._config.get("custom_resources_template")
+
+    @property
     def volumes(self) -> List[Dict[str, Any]]:
         return list(self._config["volumes"])
 
     @property
     def volume_mounts(self) -> List[Dict[str, Any]]:
         return list(self._config["volume_mounts"])
+
+    @property
+    def butler_secret_path(self) -> str:
+        return self._config.get("butler_secret_path")
