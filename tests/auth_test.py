@@ -27,7 +27,7 @@ async def config_mock() -> AsyncGenerator:
     with patch("nublado2.auth.NubladoConfig") as mock:
         mock.return_value = MagicMock()
         mock.return_value.base_url = "https://data.example.com/"
-        mock.return_value.gafaelfawr_token = None
+        mock.return_value.gafaelfawr_token = "admin-token"
         yield mock.return_value
 
 
@@ -49,25 +49,8 @@ def build_userinfo_handler(
     return handler
 
 
-def build_analyze_handler(
-    data: Dict[str, Any], valid: bool = True
-) -> Callable[..., CallbackResult]:
-    def handler(url: str, **kwargs: Any) -> CallbackResult:
-        assert kwargs["data"] == {"token": "some-token"}
-        response = {
-            "token": {
-                "data": data,
-                "valid": valid,
-            }
-        }
-        return CallbackResult(payload=response, status=200)
-
-    return handler
-
-
 @pytest.mark.asyncio
 async def test_login_handler(config_mock: MagicMock) -> None:
-    config_mock.gafaelfawr_token = "admin-token"
     headers = HTTPHeaders({"X-Auth-Request-Token": "user-token"})
     url = "https://data.example.com/auth/api/v1/user-info"
 
@@ -121,105 +104,6 @@ async def test_login_handler(config_mock: MagicMock) -> None:
                 "username": "bar",
                 "uid": 4510,
                 "token": "user-token",
-                "groups": [
-                    {"name": "group-one", "id": 1726},
-                    {"name": "another", "id": 6789},
-                ],
-            },
-        }
-
-
-@pytest.mark.asyncio
-async def test_legacy_login_handler() -> None:
-    headers = HTTPHeaders({"X-Auth-Request-Token": "some-token"})
-
-    # Invalid token.
-    with aioresponses() as m:
-        handler = build_analyze_handler({"uid": "foo"}, valid=False)
-        m.post("https://data.example.com/auth/analyze", callback=handler)
-        with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
-
-    # Bad API status.
-    with aioresponses() as m:
-        m.post("https://data.example.com/auth/analyze", payload={}, status=500)
-        with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
-
-    # Invalid response.
-    with aioresponses() as m:
-        m.post("https://data.example.com/auth/analyze", payload={})
-        with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
-
-    # Test minimum data.
-    with aioresponses() as m:
-        handler = build_analyze_handler({"uid": "foo"})
-        m.post("https://data.example.com/auth/analyze", callback=handler)
-        assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
-            "name": "foo",
-            "auth_state": {
-                "uid": None,
-                "token": "some-token",
-                "groups": [],
-            },
-        }
-
-    # Test full data.
-    with aioresponses() as m:
-        handler = build_analyze_handler(
-            {
-                "uid": "bar",
-                "uidNumber": "4510",
-                "isMemberOf": [
-                    {"name": "group-one", "id": 1726},
-                    {"name": "group-two", "id": "1618"},
-                    {"name": "another", "id": 6789, "foo": "bar"},
-                ],
-            }
-        )
-        m.post("https://data.example.com/auth/analyze", callback=handler)
-        assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
-            "name": "bar",
-            "auth_state": {
-                "uid": 4510,
-                "token": "some-token",
-                "groups": [
-                    {"name": "group-one", "id": 1726},
-                    {"name": "group-two", "id": 1618},
-                    {"name": "another", "id": 6789},
-                ],
-            },
-        }
-
-    # Check invalid format of isMemberOf.
-    with aioresponses() as m:
-        handler = build_analyze_handler(
-            {"uid": "bar", "isMemberOf": [{"name": "foo", "id": ["foo"]}]}
-        )
-        m.post("https://data.example.com/auth/analyze", callback=handler)
-        with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
-
-    # Test groups without GIDs.
-    with aioresponses() as m:
-        handler = build_analyze_handler(
-            {
-                "uid": "bar",
-                "uidNumber": "4510",
-                "isMemberOf": [
-                    {"name": "group-one", "id": 1726},
-                    {"name": "group-two"},
-                    {"name": "another", "id": 6789},
-                ],
-            }
-        )
-        m.post("https://data.example.com/auth/analyze", callback=handler)
-        assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
-            "name": "bar",
-            "auth_state": {
-                "uid": 4510,
-                "token": "some-token",
                 "groups": [
                     {"name": "group-one", "id": 1726},
                     {"name": "another", "id": 6789},

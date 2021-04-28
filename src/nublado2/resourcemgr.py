@@ -1,9 +1,4 @@
-import datetime
-import json
-import os
-
 import aiohttp
-import jwt
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from jupyterhub.utils import exponential_backoff
@@ -127,10 +122,7 @@ class ResourceManager(LoggingConfigurable):
             "uid": int(auth_state["uid"]),
             "groups": auth_state["groups"],
         }
-        if nc.gafaelfawr_token:
-            token = nc.gafaelfawr_token
-        else:
-            token = await self._mint_admin_token()
+        token = nc.gafaelfawr_token
         endpt = f"{nc.base_url}/moneypenny/commission"
         auth = {"Authorization": f"Bearer {token}"}
         self.log.debug(f"Posting dossier {dossier} to {endpt}")
@@ -161,37 +153,6 @@ class ResourceManager(LoggingConfigurable):
             fail_message="Moneypenny did not complete.",
             timeout=300,
         )
-
-    async def _mint_admin_token(self) -> str:
-        """Create a token with exec:admin scope, signed as if Gafaelfawr had
-        created it, in order to submit orders to Moneypenny.
-        """
-        nc = NubladoConfig()
-        template_file = os.path.join(
-            os.path.dirname(__file__), "static/moneypenny-jwt-template.json"
-        )
-        current_time = int(
-            datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
-        )
-        with open(template_file, "r") as f:
-            token_template = Template(f.read())
-
-        token_data = {
-            "environment_url": nc.base_url,
-            "username": "moneypenny",
-            "uidnumber": 1007,
-            "issue_time": current_time,
-            "expiration_time": current_time + 300,
-        }
-        rendered_token = token_template.render(token_data)
-        token_dict = json.loads(rendered_token)
-        token = jwt.encode(
-            token_dict,
-            key=nc.signing_key,
-            headers={"kid": "reissuer"},
-            algorithm="RS256",
-        )
-        return token
 
     async def _build_dask_template(self, spawner: Spawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
