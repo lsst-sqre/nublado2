@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
@@ -66,13 +68,19 @@ async def test_provision() -> None:
     with patch("nublado2.resourcemgr.config"):
         resource_manager = ResourceManager()
 
+    # AsyncMock was introduced in Python 3.8, so sadly we can't use it yet.
     spawner = Mock(spec=Spawner)
     spawner.user = Mock(spec=User)
     spawner.user.name = "someuser"
-    spawner.user.get_auth_state.return_value = {
+    auth_state = {
         "uid": 1234,
         "groups": [{"name": "foo", "id": 1234}],
     }
+    if sys.version_info < (3, 8):
+        spawner.user.get_auth_state.return_value = asyncio.Future()
+        spawner.user.get_auth_state.return_value.set_result(auth_state)
+    else:
+        spawner.user.get_auth_state.return_value = auth_state
 
     commission_url = "https://data.example.com/moneypenny/commission"
     status_url = "https://data.example.com/moneypenny/someuser"
