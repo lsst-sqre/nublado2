@@ -152,7 +152,9 @@ class GafaelfawrLoginHandler(BaseHandler):
 
         config = NubladoConfig()
         if not config.gafaelfawr_token:
-            return await cls._get_legacy_userinfo(config, token)
+            raise web.HTTPError(
+                500, "gafaelfawr_token not set in configuration"
+            )
         if not config.base_url:
             raise web.HTTPError(500, "base_url not set in configuration")
 
@@ -177,46 +179,4 @@ class GafaelfawrLoginHandler(BaseHandler):
         return {
             "name": auth_state["username"],
             "auth_state": auth_state,
-        }
-
-    @staticmethod
-    async def _get_legacy_userinfo(
-        config: NubladoConfig, token: str
-    ) -> Dict[str, Any]:
-        """Get user information from a token for Gafaelfawr 1.x."""
-        if not config.base_url:
-            raise web.HTTPError(500, "base_url not set in configuration")
-        api_url = url_path_join(config.base_url, "/auth/analyze")
-        session = await get_session()
-        resp = await session.post(api_url, data={"token": token})
-        if resp.status != 200:
-            raise web.HTTPError(500, "Cannot reach token analysis API")
-        try:
-            analyze_data = await resp.json()
-            valid = analyze_data["token"]["valid"]
-            token_data = analyze_data["token"].get("data")
-        except Exception:
-            raise web.HTTPError(500, "Cannot analyze token")
-        if not valid or not token_data or "uid" not in token_data:
-            raise web.HTTPError(403, "Request token is invalid")
-
-        # Construct an auth_info structure with the additional details about
-        # the user.  We want only the groups that have GIDs (NCSA generates
-        # some groups that have names but no GID).
-        uid = token_data.get("uidNumber")
-        try:
-            groups = [
-                {"name": g["name"], "id": int(g["id"])}
-                for g in token_data.get("isMemberOf", [])
-                if "id" in g
-            ]
-        except Exception:
-            raise web.HTTPError(403, "Token data is not in a valid format")
-        return {
-            "name": token_data["uid"],
-            "auth_state": {
-                "uid": int(uid) if uid else None,
-                "token": token,
-                "groups": groups,
-            },
         }
