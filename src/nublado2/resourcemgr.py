@@ -59,6 +59,7 @@ class ResourceManager(LoggingConfigurable):
                 "groups": groups,
                 "external_groups": external_groups,
                 "base_url": self.nublado_config.base_url,
+                "data_repo_bucket": self.nublado_config.data_repo_bucket,
                 "dask_yaml": await self._build_dask_template(spawner),
                 "options": options,
                 "labels": spawner.common_labels,
