@@ -69,14 +69,9 @@ class NubladoConfig:
         return dict(self._sizes)
 
     @property
-    def user_resources_template(self) -> str:
+    def user_resources_template(self) -> Dict[str, Any]:
         """Retrieve a copy of the lab resources templates."""
         return self._config.get("user_resources_template")
-
-    @property
-    def custom_resources_template(self) -> str:
-        """Retrieve a copy of the lab custom resource templates."""
-        return self._config.get("custom_resources_template")
 
     @property
     def volumes(self) -> List[Dict[str, Any]]:
