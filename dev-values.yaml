@@ -33,6 +33,8 @@ jupyterhub:
 config:
   base_url: "https://minikube.lsst.codes"
   images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
+  lab_environment:
+    DATA_REPO: "s3://butler-us-central1-dp01-dev"
   volumes:
     - name: home
       emptyDir: {}

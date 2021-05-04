@@ -65,6 +65,7 @@ class ResourceManager(LoggingConfigurable):
                 "annotations": spawner.extra_annotations,
                 "nublado_base_url": spawner.hub.base_url,
                 "butler_secret_path": self.nublado_config.butler_secret_path,
+                "lab_environment": self.nublado_config.lab_environment,
             }
 
             self.log.debug(f"Template values={template_values}")

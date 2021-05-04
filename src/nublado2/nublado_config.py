@@ -79,6 +79,10 @@ class NubladoConfig:
         return self._config.get("custom_resources_template")
 
     @property
+    def lab_environment(self) -> Dict[str, str]:
+        return dict(self._config.get("lab_environment"))
+
+    @property
     def volumes(self) -> List[Dict[str, Any]]:
         return list(self._config["volumes"])
 
