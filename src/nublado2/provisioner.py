@@ -8,26 +8,19 @@ from urllib.parse import urljoin
 from jupyterhub.utils import exponential_backoff
 from traitlets.config import LoggingConfigurable
 
+from nublado2.http import get_session
 from nublado2.nublado_config import NubladoConfig
 
 if TYPE_CHECKING:
-    from aiohttp import ClientSession
     from jupyterhub.spawner import Spawner
 
 __all__ = ["Provisioner"]
 
 
 class Provisioner(LoggingConfigurable):
-    """Provision home directories using the moneypenny service.
+    """Provision home directories using the moneypenny service."""
 
-    Parameters
-    ----------
-    http_client : `aiohttp.ClientSession`
-        HTTP client to use to make requests.
-    """
-
-    def __init__(self, http_client: ClientSession) -> None:
-        self.http_client = http_client
+    def __init__(self) -> None:
         self.nublado_config = NubladoConfig()
 
     async def provision_homedir(self, spawner: Spawner) -> None:
@@ -41,6 +34,7 @@ class Provisioner(LoggingConfigurable):
         """
         auth_state = await spawner.user.get_auth_state()
         base_url = self.nublado_config.base_url
+        token = self.nublado_config.gafaelfawr_token
 
         # Start the provisioning request.
         dossier = {
@@ -49,8 +43,13 @@ class Provisioner(LoggingConfigurable):
             "groups": auth_state["groups"],
         }
         provision_url = urljoin(base_url, "moneypenny/commission")
+        session = await get_session()
         self.log.debug(f"Posting dossier {dossier} to {provision_url}")
-        r = await self.http_client.post(provision_url, json=dossier)
+        r = await session.post(
+            provision_url,
+            json=dossier,
+            headers={"Authorization": f"Bearer {token}"},
+        )
         self.log.debug(f"POST got {r.status}")
         r.raise_for_status()
 
@@ -74,8 +73,14 @@ class Provisioner(LoggingConfigurable):
         """Wait for provisioning to complete."""
         base_url = self.nublado_config.base_url
         status_url = urljoin(base_url, f"moneypenny/{username}")
-        r = await self.http_client.get(status_url)
+        token = self.nublado_config.gafaelfawr_token
+        session = await get_session()
+
+        r = await session.get(
+            status_url, headers={"Authorization": f"Bearer {token}"}
+        )
         self.log.debug(f"Moneypenny {status_url} status: {r.status}")
+
         if r.status == 200 or r.status == 404:
             return True
         if r.status != 202:
