@@ -3,8 +3,9 @@ from __future__ import annotations
 from io import StringIO
 from typing import TYPE_CHECKING
 
+import kubernetes
 from jinja2 import Template
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.utils import create_from_dict
 from ruamel.yaml import YAML
 from traitlets.config import LoggingConfigurable
@@ -20,6 +21,10 @@ if TYPE_CHECKING:
 
     from nublado2.selectedoptions import SelectedOptions
 
+# Load Kubernetes configuration.  Because we create global class variables for
+# the Kubernetes API, this has to be done during module load.
+kubernetes.config.load_incluster_config()
+
 
 class ResourceManager(LoggingConfigurable):
     # These k8s clients don't copy well with locks, connection,
@@ -31,7 +36,6 @@ class ResourceManager(LoggingConfigurable):
     k8s_client = client.CoreV1Api()
 
     def __init__(self) -> None:
-        config.load_incluster_config()
         self.nublado_config = NubladoConfig()
         self.provisioner = Provisioner()
         self.yaml = YAML()

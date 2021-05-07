@@ -7,10 +7,17 @@ import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
+import kubernetes
 import pytest
 from aioresponses import CallbackResult, aioresponses
 from jupyterhub.spawner import Spawner
 from jupyterhub.user import User
+
+# We have to patch out the Kubernetes configuration when importing
+# nublado2.resourcemgr the first time, because it tries to load the Kubernetes
+# configuration on module load.
+with patch.object(kubernetes, "config"):
+    import nublado2.resourcemgr  # noqa: F401
 
 from nublado2.resourcemgr import ResourceManager
 
@@ -65,8 +72,7 @@ def build_handler(
 
 @pytest.mark.asyncio
 async def test_provision() -> None:
-    with patch("nublado2.resourcemgr.config"):
-        resource_manager = ResourceManager()
+    resource_manager = ResourceManager()
 
     # AsyncMock was introduced in Python 3.8, so sadly we can't use it yet.
     spawner = Mock(spec=Spawner)
