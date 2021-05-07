@@ -80,11 +80,6 @@ class ResourceManager(LoggingConfigurable):
     ) -> None:
         template_values = await self._build_template_values(spawner, options)
 
-        # Construct the lab environment ConfigMap.  This is constructed from
-        # configuration settings and doesn't use a resource template like
-        # other resources.
-        self._create_lab_environment_configmap(spawner, template_values)
-
         # Generate the list of additional user resources from the template.
         self.log.debug("Template:")
         self.log.debug(self.nublado_config.user_resources_template)
@@ -119,6 +114,12 @@ class ResourceManager(LoggingConfigurable):
                 )
             else:
                 create_from_dict(self.k8s_api, resource)
+
+        # Construct the lab environment ConfigMap.  This is constructed from
+        # configuration settings and doesn't use a resource template like
+        # other resources.  This has to be done last, becuase the namespace is
+        # created from the user resources template.
+        self._create_lab_environment_configmap(spawner, template_values)
 
     async def _build_dask_template(self, spawner: Spawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
