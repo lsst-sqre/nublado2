@@ -3,7 +3,6 @@ from __future__ import annotations
 from io import StringIO
 from typing import TYPE_CHECKING
 
-import aiohttp
 from jinja2 import Template
 from kubernetes import client, config
 from kubernetes.utils import create_from_dict
@@ -34,11 +33,7 @@ class ResourceManager(LoggingConfigurable):
     def __init__(self) -> None:
         config.load_incluster_config()
         self.nublado_config = NubladoConfig()
-        token = self.nublado_config.gafaelfawr_token
-        self.http_client = aiohttp.ClientSession(
-            headers={"Authorization": f"Bearer {token}"}
-        )
-        self.provisioner = Provisioner(self.http_client)
+        self.provisioner = Provisioner()
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
 
