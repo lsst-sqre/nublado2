@@ -50,6 +50,11 @@ class NubladoConfig:
         return self._config["images_url"]
 
     @property
+    def lab_environment(self) -> Dict[str, str]:
+        """Environment variable settings for the lab (possibly templates)."""
+        return dict(self._config.get("lab_environment", {}))
+
+    @property
     def pinned_images(self) -> List[ImageInfo]:
         """List of images to keep pinned in the options form."""
         return [
@@ -72,11 +77,6 @@ class NubladoConfig:
     def user_resources_template(self) -> str:
         """Retrieve a copy of the lab resources templates."""
         return self._config.get("user_resources_template")
-
-    @property
-    def custom_resources_template(self) -> str:
-        """Retrieve a copy of the lab custom resource templates."""
-        return self._config.get("custom_resources_template")
 
     @property
     def volumes(self) -> List[Dict[str, Any]]:

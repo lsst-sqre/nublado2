@@ -24,7 +24,7 @@ async def config_mock() -> AsyncGenerator:
     with patch("nublado2.resourcemgr.NubladoConfig") as mock:
         mock.return_value = MagicMock()
         mock.return_value.base_url = "https://data.example.com/"
-        mock.return_valid.gafaelfawr_token = "admin-token"
+        mock.return_value.gafaelfawr_token = "admin-token"
         with patch("nublado2.provisioner.NubladoConfig") as mock:
             mock.return_value = MagicMock()
             mock.return_value.base_url = "https://data.example.com/"
