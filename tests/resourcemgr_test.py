@@ -7,6 +7,7 @@ import sys
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
+import kubernetes
 import pytest
 from jupyterhub.user import User
 from kubernetes.client import (
@@ -23,8 +24,15 @@ from kubespawner.spawner import KubeSpawner
 from nublado2.crdparser import CRDParser
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
-from nublado2.resourcemgr import ResourceManager
 from nublado2.selectedoptions import SelectedOptions
+
+# We have to patch out the Kubernetes configuration when importing
+# nublado2.resourcemgr the first time, because it tries to load the Kubernetes
+# configuration on module load.
+with patch.object(kubernetes, "config"):
+    import nublado2.resourcemgr  # noqa: F401
+
+from nublado2.resourcemgr import ResourceManager
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Iterator, List
@@ -117,12 +125,6 @@ def config_mock() -> Iterator[None]:
         with patch("nublado2.provisioner.NubladoConfig") as provisioner_mock:
             provisioner_mock.return_value = mock.return_value
             yield
-
-
-@pytest.fixture(autouse=True)
-def kubernetes_config_mock() -> Iterator[None]:
-    with patch("nublado2.resourcemgr.config"):
-        yield
 
 
 @pytest.fixture(autouse=True)
