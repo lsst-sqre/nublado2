@@ -31,6 +31,7 @@ jupyterhub:
 
 config:
   base_url: "https://minikube.lsst.codes"
+  butler_secret_path: "secret/k8s_operator/minikube.lsst.codes/butler-secret"
   images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
   volumes:
     - name: home
