@@ -3,8 +3,6 @@ jupyterhub:
     enabled: true
 
   hub:
-    db:
-      type: sqlite-memory
     networkPolicy:
       enabled: false
     image:
@@ -29,6 +27,7 @@ jupyterhub:
     hosts: ["minikube.lsst.codes"]
     annotations:
       nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes/login"
+      nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook&notebook=true"
 
 config:
   base_url: "https://minikube.lsst.codes"
