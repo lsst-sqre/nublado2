@@ -6,6 +6,6 @@ else
   CHART=lsst-sqre/nublado2
 fi
 
-helm delete n2-dev --namespace n2-dev || true
+helm delete nublado2 --namespace nublado2 || true
 docker build -t lsstsqre/nublado2:dev .
-helm upgrade --install n2-dev $CHART --namespace n2-dev --values dev-values.yaml --create-namespace
+helm upgrade --install nublado2 $CHART --namespace nublado2 --values dev-values.yaml --create-namespace

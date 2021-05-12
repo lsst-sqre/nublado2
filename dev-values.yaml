@@ -3,8 +3,6 @@ jupyterhub:
     enabled: true
 
   hub:
-    db:
-      type: sqlite-memory
     networkPolicy:
       enabled: false
     image:
@@ -29,9 +27,11 @@ jupyterhub:
     hosts: ["minikube.lsst.codes"]
     annotations:
       nginx.ingress.kubernetes.io/auth-signin: "https://minikube.lsst.codes/login"
+      nginx.ingress.kubernetes.io/auth-url: "http://gafaelfawr.gafaelfawr.svc.cluster.local:8080/auth?scope=exec:notebook&notebook=true"
 
 config:
   base_url: "https://minikube.lsst.codes"
+  butler_secret_path: "secret/k8s_operator/minikube.lsst.codes/butler-secret"
   images_url: "http://cachemachine.cachemachine.svc.cluster.local/cachemachine/jupyter/available"
   volumes:
     - name: home
