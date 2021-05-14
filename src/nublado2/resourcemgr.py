@@ -69,7 +69,7 @@ class ResourceManager(LoggingConfigurable):
                 name="lab-environment",
                 namespace=spawner.namespace,
                 annotations=spawner.extra_annotations,
-                labels=spawner.common_labels,
+                labels=spawner.extra_labels,
             ),
             data=environment,
         )
@@ -95,7 +95,7 @@ class ResourceManager(LoggingConfigurable):
             if "metadata" not in resource:
                 resource["metadata"] = {}
             resource["metadata"]["annotations"] = spawner.extra_annotations
-            resource["metadata"]["labels"] = spawner.common_labels
+            resource["metadata"]["labels"] = spawner.extra_labels
 
             # Custom resources cannot be created by create_from_dict:
             # https://github.com/kubernetes-client/python/issues/740
