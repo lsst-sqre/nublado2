@@ -154,7 +154,7 @@ async def test_create_kubernetes_resources(
         "argocd.argoproj.io/compare-options": "IgnoreExtraneous",
         "argocd.argoproj.io/sync-options": "Prune=false",
     }
-    spawner.common_labels = {
+    spawner.extra_labels = {
         "hub.jupyter.org/network-access-hub": "true",
         "argocd.argoproj.io/instance": "nublado-users",
     }
@@ -217,7 +217,7 @@ async def test_create_kubernetes_resources(
                 "name": "dask",
                 "namespace": spawner.namespace,
                 "annotations": spawner.extra_annotations,
-                "labels": spawner.common_labels,
+                "labels": spawner.extra_labels,
             },
             "data": {
                 "dask_worker.yml": f"""\
@@ -246,7 +246,7 @@ spec:
                 "name": "group",
                 "namespace": spawner.namespace,
                 "annotations": spawner.extra_annotations,
-                "labels": spawner.common_labels,
+                "labels": spawner.extra_labels,
             },
             "data": {
                 "group": (
@@ -263,7 +263,7 @@ spec:
                 "name": "lab-environment",
                 "namespace": spawner.namespace,
                 "annotations": spawner.extra_annotations,
-                "labels": spawner.common_labels,
+                "labels": spawner.extra_labels,
             },
             "data": {
                 "EXTERNAL_INSTANCE_URL": "https://data.example.com/",
@@ -291,7 +291,7 @@ spec:
                 "name": "butler-secret",
                 "namespace": spawner.namespace,
                 "annotations": spawner.extra_annotations,
-                "labels": spawner.common_labels,
+                "labels": spawner.extra_labels,
             },
             "spec": {
                 "path": "k8s_operator/data/butler",
