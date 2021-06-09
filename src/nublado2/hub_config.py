@@ -41,6 +41,10 @@ class HubConfig(LoggingConfigurable):
         # the default, which is 30 seconds.
         c.KubeSpawner.http_timeout = 90
 
+        # 'nb' will save us a little bit of horizontal space on the prompt
+        # relative to 'jupyter'
+        c.KubeSpawner.pod_name_template = "nb-{username}--{servername}"
+
         # This is put in the lab pod, and tells kubernetes to
         # use all the key: values found in the lab-environment
         # configmap as environment variables for the lab
