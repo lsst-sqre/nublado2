@@ -41,6 +41,14 @@ class HubConfig(LoggingConfigurable):
         # the default, which is 30 seconds.
         c.KubeSpawner.http_timeout = 90
 
+        # We don't need the user name in the pod name, because
+        # each user has a unique namespace.  At some point we
+        # might want the image tag again, if we decide to allow
+        # multiple simultaneous user containers with different
+        # images, but we're not there yet.  'nb' will save us a
+        # lot of horizontal space on the prompt.
+        c.KubeSpawner.pod_name_template = "nb"
+
         # This is put in the lab pod, and tells kubernetes to
         # use all the key: values found in the lab-environment
         # configmap as environment variables for the lab

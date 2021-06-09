@@ -135,3 +135,6 @@ dmypy.json
 
 # Development charts
 dev-chart.tgz
+
+# Mac folder metadata
+.DS_Store
