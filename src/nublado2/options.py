@@ -49,7 +49,7 @@ function selectDropdown() {
     <input type="radio" name="image_list"
         id="{{ dropdown_sentinel }}"
         value="{{ dropdown_sentinel }}">
-    Select historical image:<br />
+    Select uncached image (slower start):<br />
     <select name="image_dropdown" onchange="selectDropdown()">
     {% for i in all_images %}
         <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
