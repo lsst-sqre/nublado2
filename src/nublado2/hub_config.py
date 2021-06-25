@@ -20,6 +20,8 @@ class HubConfig(LoggingConfigurable):
         self.log.debug(f"Nublado Config is:\n{nc}")
 
         c.JupyterHub.hub_connect_url = self._get_hub_connect_url()
+        # Turn off concurrent spawn limit
+        c.JupyterHub.concurrent_spawn_limit = 0
 
         # Setup hooks
         hooks = NubladoHooks()
@@ -27,6 +29,8 @@ class HubConfig(LoggingConfigurable):
         c.Spawner.post_stop_hook = hooks.post_stop
         c.Spawner.options_form = hooks.show_options
         c.Spawner.options_from_form = hooks.options_from_form
+        # Turn off restart after n consecutive failures
+        c.Spawner.consecutive_failure_limit = 0
 
         c.KubeSpawner.enable_user_namespaces = True
 
