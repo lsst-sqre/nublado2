@@ -5,11 +5,12 @@
 # After editing, update requirements/dev.txt by running:
 #     make update-deps
 
+-c main.txt
+
 aioresponses
 pre-commit
 coverage[toml]
 flake8
-idna==2.10
 mypy
 pytest
 pytest-asyncio
