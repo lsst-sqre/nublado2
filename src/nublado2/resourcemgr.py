@@ -174,6 +174,7 @@ class ResourceManager(LoggingConfigurable):
             "options": options,
             "nublado_base_url": spawner.hub.base_url,
             "butler_secret_path": self.nublado_config.butler_secret_path,
+            "pull_secret_path": self.nublado_config.pull_secret_path,
         }
         self.log.debug(f"Template values={template_values}")
         return template_values

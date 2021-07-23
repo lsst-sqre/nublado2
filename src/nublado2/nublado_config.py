@@ -89,3 +89,7 @@ class NubladoConfig:
     @property
     def butler_secret_path(self) -> str:
         return self._config.get("butler_secret_path")
+
+    @property
+    def pull_secret_path(self) -> str:
+        return self._config.get("pull_secret_path")
