@@ -93,4 +93,3 @@ class NubladoConfig:
     @property
     def pull_secret_path(self) -> str:
         return self._config.get("pull_secret_path")
-
