@@ -402,9 +402,9 @@ typing-extensions==3.10.0.0 \
     #   -c requirements/main.txt
     #   aiohttp
     #   mypy
-virtualenv==20.7.0 \
-    --hash=sha256:97066a978431ec096d163e72771df5357c5c898ffdd587048f45e0aecc228094 \
-    --hash=sha256:fdfdaaf0979ac03ae7f76d5224a05b58165f3c804f8aa633f3dd6f22fbd435d5
+virtualenv==20.7.2 \
+    --hash=sha256:9ef4e8ee4710826e98ff3075c9a4739e2cb1040de6a2a8d35db0055840dc96a0 \
+    --hash=sha256:e4670891b3a03eb071748c569a87cceaefbf643c5bac46d996c5a45c34aa0f06
     # via pre-commit
 yarl==1.6.3 \
     --hash=sha256:00d7ad91b6583602eb9c1d085a2cf281ada267e9a197e8b7cae487dadbfa293e \
