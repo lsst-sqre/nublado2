@@ -292,8 +292,9 @@ jupyterhub-idle-culler==1.1 \
     --hash=sha256:45bceffeea8758b60e1f60650bc3de0d0d1e5f774623793db268ded1fa0cbdcb \
     --hash=sha256:600b2713f90ecc475f690747d1ec02bcae8f44fa7f3e51a71e400727895631d8
     # via -r requirements/main.in
-https://github.com/cbanek/kubespawner/archive/f2810911a7d5206535db52a8fd5762bd28878975.zip \
-    --hash=sha256:dbf75280cbaedc5aef84f038edca34fc8a656bf1ef591beb67ee605c8bfe9ba1
+jupyterhub-kubespawner==1.1.0 \
+    --hash=sha256:39775f30546de7dcdbf324ae468b50829daf3742604ab01e6023883230ee0ffd \
+    --hash=sha256:867d7d364be870e72b9ac81fa90c167cc208d8d1185d58e80e6e75692eb2bdeb
     # via -r requirements/main.in
 kubernetes==17.17.0 \
     --hash=sha256:225a95a0aadbd5b645ab389d941a7980db8cdad2a776fde64d1b43fc3299bde9 \
