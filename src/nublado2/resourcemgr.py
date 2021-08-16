@@ -1,13 +1,19 @@
+"""Spawn and delete Kubernetes resources other than the pod."""
+
 from __future__ import annotations
 
+from datetime import timedelta
+from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
 import kubernetes
 from jinja2 import Template
+from jupyterhub.utils import exponential_backoff
 from kubernetes import client
 from kubernetes.utils import create_from_dict
 from ruamel.yaml import YAML
+from tornado import gen
 from traitlets.config import LoggingConfigurable
 
 from nublado2.crdparser import CRDParser
@@ -17,7 +23,7 @@ from nublado2.provisioner import Provisioner
 if TYPE_CHECKING:
     from typing import Any, Dict
 
-    from jupyterhub.spawner import Spawner
+    from jupyterhub.kubespawner import KubeSpawner
 
     from nublado2.selectedoptions import SelectedOptions
 
@@ -42,7 +48,7 @@ class ResourceManager(LoggingConfigurable):
         self.yaml.indent(mapping=2, sequence=4, offset=2)
 
     async def create_user_resources(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         """Create the user resources for this spawning session."""
         await self.provisioner.provision_homedir(spawner)
@@ -52,8 +58,17 @@ class ResourceManager(LoggingConfigurable):
             self.log.exception("Exception creating user resource!")
             raise
 
+    def delete_user_resources(self, namespace: str) -> None:
+        """Clean up a Jupyter lab by deleting the whole namespace.
+
+        The reason is it's easier to do this than try to make a list of
+        resources to delete, especially when new things may be dynamically
+        created outside of the hub, like dask.
+        """
+        self.k8s_client.delete_namespace(name=namespace)
+
     def _create_lab_environment_configmap(
-        self, spawner: Spawner, template_values: Dict[str, Any]
+        self, spawner: KubeSpawner, template_values: Dict[str, Any]
     ) -> None:
         """Create the ConfigMap that holds environment settings for the lab."""
         environment = {}
@@ -76,7 +91,7 @@ class ResourceManager(LoggingConfigurable):
         self.k8s_client.create_namespaced_config_map(spawner.namespace, body)
 
     async def _create_kubernetes_resources(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         template_values = await self._build_template_values(spawner, options)
 
@@ -91,6 +106,7 @@ class ResourceManager(LoggingConfigurable):
 
         # Add in the standard labels and annotations common to every resource
         # and create the resources.
+        service_account = None
         for resource in resources:
             if "metadata" not in resource:
                 resource["metadata"] = {}
@@ -115,13 +131,32 @@ class ResourceManager(LoggingConfigurable):
             else:
                 create_from_dict(self.k8s_api, resource)
 
+            # If this was a service account, note its name.
+            if resource["kind"] == "ServiceAccount":
+                service_account = resource["metadata"]["name"]
+
         # Construct the lab environment ConfigMap.  This is constructed from
         # configuration settings and doesn't use a resource template like
         # other resources.  This has to be done last, becuase the namespace is
         # created from the user resources template.
         self._create_lab_environment_configmap(spawner, template_values)
 
-    async def _build_dask_template(self, spawner: Spawner) -> str:
+        # Wait for the service account to generate a token before proceeding.
+        # Otherwise, we may try to create the pod before the service account
+        # token exists and Kubernetes will object.
+        if service_account:
+            await exponential_backoff(
+                partial(
+                    self._wait_for_service_account_token,
+                    spawner,
+                    service_account,
+                    spawner.namespace,
+                ),
+                f"Service account {service_account} has no token",
+                timeout=spawner.k8s_api_request_retry_timeout,
+            )
+
+    async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
         dask_template = await spawner.get_pod_manifest()
 
@@ -150,7 +185,7 @@ class ResourceManager(LoggingConfigurable):
         return dask_yaml_stream.getvalue()
 
     async def _build_template_values(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> Dict[str, Any]:
         """Construct the template variables for Jinja templating."""
         auth_state = await spawner.user.get_auth_state()
@@ -179,10 +214,20 @@ class ResourceManager(LoggingConfigurable):
         self.log.debug(f"Template values={template_values}")
         return template_values
 
-    def delete_user_resources(self, namespace: str) -> None:
-        """Clean up a jupyterlab by deleting the whole namespace.
-
-        The reason is it's easier to do this than try to make a list
-        of resources to delete, especially when new things may be
-        dynamically created outside of the hub, like dask."""
-        self.k8s_client.delete_namespace(name=namespace)
+    async def _wait_for_service_account_token(
+        self, spawner: KubeSpawner, name: str, namespace: str
+    ) -> bool:
+        """Waits for a service account to spawn an associated token."""
+        try:
+            service_account = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(
+                    self.k8s_client.read_namespaced_service_account,
+                    name,
+                    namespace,
+                ),
+            )
+        except gen.TimeoutError:
+            return False
+        else:
+            return service_account.secrets != []

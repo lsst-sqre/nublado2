@@ -16,3 +16,4 @@ jupyterhub-idle-culler
 jupyterhub-kubespawner
 psycopg2
 ruamel.yaml
+tornado
