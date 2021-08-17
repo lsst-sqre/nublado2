@@ -12,6 +12,7 @@ from jinja2 import Template
 from jupyterhub.utils import exponential_backoff
 from kubernetes import client
 from kubernetes.utils import create_from_dict
+from kubespawner.clients import shared_client
 from ruamel.yaml import YAML
 from tornado import gen
 from traitlets.config import LoggingConfigurable
@@ -27,25 +28,37 @@ if TYPE_CHECKING:
 
     from nublado2.selectedoptions import SelectedOptions
 
-# Load Kubernetes configuration.  Because we create global class variables for
-# the Kubernetes API, this has to be done during module load.
-kubernetes.config.load_incluster_config()
-
 
 class ResourceManager(LoggingConfigurable):
-    # These k8s clients don't copy well with locks, connection,
-    # pools, locks, etc.  Copying seems to happen under the hood of the
-    # LoggingConfigurable base class, so just have them be class variables.
-    # Should be safe to share these, and better to have fewer of them.
-    k8s_api = client.ApiClient()
-    custom_api = client.CustomObjectsApi()
-    k8s_client = client.CoreV1Api()
+    """Create additional Kubernetes resources when spawning labs.
+
+    This is conceptually a subclass of KubeSpawner but it's patched in via
+    hooks rather than as a proper subclass.  It creates (or deletes) all of
+    the other resources we want to create for a lab pod, and then delegates
+    creation of the pod itself to KubeSpawner.
+
+    This class makes extensive use of KubeSpawner internals to avoid
+    reimplementing the wheel and to work nicely with KubeSpawner and its
+    concurrency model.
+    """
 
     def __init__(self) -> None:
         self.nublado_config = NubladoConfig()
         self.provisioner = Provisioner()
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
+
+        # Load Kubernetes configuration.  This will also be done by
+        # KubeSpawner, but since this class is created before the spawner and
+        # we want to create Kubernetes clients here, we have to do it
+        # ourselves.
+        kubernetes.config.load_incluster_config()
+
+        # Use the kubespawner utility function to manage single shared clients
+        # of the various types we need.
+        self.k8s_api = shared_client("ApiClient")
+        self.custom_api = shared_client("CustomObjectsApi")
+        self.k8s_client = shared_client("CoreV1Api")
 
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
@@ -67,7 +80,7 @@ class ResourceManager(LoggingConfigurable):
         """
         self.k8s_client.delete_namespace(name=namespace)
 
-    def _create_lab_environment_configmap(
+    async def _create_lab_environment_configmap(
         self, spawner: KubeSpawner, template_values: Dict[str, Any]
     ) -> None:
         """Create the ConfigMap that holds environment settings for the lab."""
@@ -88,7 +101,11 @@ class ResourceManager(LoggingConfigurable):
             ),
             data=environment,
         )
-        self.k8s_client.create_namespaced_config_map(spawner.namespace, body)
+        await exponential_backoff(
+            partial(spawner._make_create_resource_request, "config_map", body),
+            f"Could not create ConfigMap {spawner.namespace}/lab-environment",
+            timeout=spawner.k8s_api_request_retry_timeout,
+        )
 
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
@@ -121,15 +138,24 @@ class ResourceManager(LoggingConfigurable):
             api_version = resource["apiVersion"]
             if "." in api_version and ".k8s.io/" not in api_version:
                 crd_parser = CRDParser.from_crd_body(resource)
-                self.custom_api.create_namespaced_custom_object(
-                    body=resource,
-                    group=crd_parser.group,
-                    version=crd_parser.version,
-                    namespace=spawner.namespace,
-                    plural=crd_parser.plural,
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(
+                        self.custom_api.create_namespaced_custom_object,
+                        body=resource,
+                        group=crd_parser.group,
+                        version=crd_parser.version,
+                        namespace=spawner.namespace,
+                        plural=crd_parser.plural,
+                    ),
                 )
             else:
-                create_from_dict(self.k8s_api, resource)
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(
+                        create_from_dict, self.k8s_api, resource
+                    ),
+                )
 
             # If this was a service account, note its name.
             if resource["kind"] == "ServiceAccount":
@@ -139,7 +165,7 @@ class ResourceManager(LoggingConfigurable):
         # configuration settings and doesn't use a resource template like
         # other resources.  This has to be done last, becuase the namespace is
         # created from the user resources template.
-        self._create_lab_environment_configmap(spawner, template_values)
+        await self._create_lab_environment_configmap(spawner, template_values)
 
         # Wait for the service account to generate a token before proceeding.
         # Otherwise, we may try to create the pod before the service account
@@ -217,7 +243,14 @@ class ResourceManager(LoggingConfigurable):
     async def _wait_for_service_account_token(
         self, spawner: KubeSpawner, name: str, namespace: str
     ) -> bool:
-        """Waits for a service account to spawn an associated token."""
+        """Waits for a service account to spawn an associated token.
+
+        Returns
+        -------
+        done : `bool`
+            `True` once the secret exists, `False` otherwise (so it can be
+            called from ``exponential_backoff``)
+        """
         try:
             service_account = await gen.with_timeout(
                 timedelta(seconds=spawner.k8s_api_request_timeout),

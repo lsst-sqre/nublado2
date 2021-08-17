@@ -12,7 +12,6 @@ import pytest
 from jupyterhub.user import User
 from kubernetes.client import (
     ApiClient,
-    V1ConfigMap,
     V1Container,
     V1EnvVar,
     V1ObjectMeta,
@@ -24,18 +23,11 @@ from kubespawner.spawner import KubeSpawner
 from nublado2.crdparser import CRDParser
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
+from nublado2.resourcemgr import ResourceManager
 from nublado2.selectedoptions import SelectedOptions
 
-# We have to patch out the Kubernetes configuration when importing
-# nublado2.resourcemgr the first time, because it tries to load the Kubernetes
-# configuration on module load.
-with patch.object(kubernetes, "config"):
-    import nublado2.resourcemgr  # noqa: F401
-
-from nublado2.resourcemgr import ResourceManager
-
 if TYPE_CHECKING:
-    from typing import Any, Dict, Iterator, List
+    from typing import Any, Callable, Dict, Iterator, List
 
 # Mock user resources template to test the template engine.
 USER_RESOURCES_TEMPLATE = """
@@ -79,12 +71,10 @@ class KubernetesApiMock:
         self.custom: List[Dict[str, Any]] = []
         self.api_client = ApiClient()
 
-    def create_namespaced_config_map(
-        self, namespace: str, body: V1ConfigMap
-    ) -> None:
-        assert body.metadata.namespace == namespace
+    async def create_object(self, kind: str, body: Any) -> bool:
         body_as_dict = self.api_client.sanitize_for_serialization(body)
         self.objects.append(body_as_dict)
+        return True
 
     def create_namespaced_custom_object(
         self,
@@ -100,6 +90,9 @@ class KubernetesApiMock:
         assert crd_info.plural == plural
         assert body["metadata"]["namespace"] == namespace
         self.custom.append(body)
+
+    def shared_client_mock(self, typ: str) -> Any:
+        return self.api_client if typ == "ApiClient" else self
 
 
 @pytest.fixture(autouse=True)
@@ -132,16 +125,15 @@ def kubernetes_api_mock() -> Iterator[KubernetesApiMock]:
     mock_api = KubernetesApiMock()
     with patch("nublado2.resourcemgr.create_from_dict") as create_mock:
         create_mock.side_effect = lambda _, r: mock_api.objects.append(r)
-        p1 = patch.object(ResourceManager, "k8s_api", mock_api.api_client)
-        p2 = patch.object(ResourceManager, "custom_api", mock_api)
-        p3 = patch.object(ResourceManager, "k8s_client", mock_api)
-        p1.start()
-        p2.start()
-        p3.start()
-        yield mock_api
-        p1.stop()
-        p2.stop()
-        p3.stop()
+        with patch("nublado2.resourcemgr.shared_client") as client_mock:
+            client_mock.side_effect = mock_api.shared_client_mock
+            yield mock_api
+
+
+async def mock_asynchronize(
+    func: Callable[..., Any], *args: Any, **kwargs: Any
+) -> Any:
+    return func(*args, **kwargs)
 
 
 @pytest.mark.asyncio
@@ -149,6 +141,8 @@ async def test_create_kubernetes_resources(
     kubernetes_api_mock: KubernetesApiMock,
 ) -> None:
     spawner = Mock(spec=KubeSpawner)
+    spawner.k8s_api_request_timeout = 3
+    spawner.k8s_api_request_retry_timeout = 30
     spawner.namespace = "nublado2-someuser"
     spawner.extra_annotations = {
         "argocd.argoproj.io/compare-options": "IgnoreExtraneous",
@@ -158,6 +152,8 @@ async def test_create_kubernetes_resources(
         "hub.jupyter.org/network-access-hub": "true",
         "argocd.argoproj.io/instance": "nublado-users",
     }
+    spawner.asynchronize = mock_asynchronize
+    spawner._make_create_resource_request = kubernetes_api_mock.create_object
     spawner.hub = Mock()
     spawner.hub.base_url = "/nb/hub/"
     spawner.user = Mock(spec=User)
@@ -203,7 +199,8 @@ async def test_create_kubernetes_resources(
         digest="sha256:123456789abcdef",
     )
 
-    resource_manager = ResourceManager()
+    with patch.object(kubernetes, "config"):
+        resource_manager = ResourceManager()
     await resource_manager._create_kubernetes_resources(spawner, options)
 
     assert sorted(
