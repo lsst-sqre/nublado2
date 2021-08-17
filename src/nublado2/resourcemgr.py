@@ -81,14 +81,19 @@ class ResourceManager(LoggingConfigurable):
             self.log.exception("Exception creating user resource!")
             raise
 
-    def delete_user_resources(self, namespace: str) -> None:
+    async def delete_user_resources(
+        self, spawner: KubeSpawner, namespace: str
+    ) -> None:
         """Clean up a Jupyter lab by deleting the whole namespace.
 
         The reason is it's easier to do this than try to make a list of
         resources to delete, especially when new things may be dynamically
         created outside of the hub, like dask.
         """
-        self.k8s_client.delete_namespace(name=namespace)
+        await gen.with_timeout(
+            timedelta(seconds=spawner.k8s_api_request_timeout),
+            spawner.asynchronize(self.k8s_client.delete_namespace, namespace),
+        )
 
     async def _create_lab_environment_configmap(
         self, spawner: KubeSpawner, template_values: Dict[str, Any]
