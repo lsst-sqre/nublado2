@@ -301,7 +301,20 @@ class ResourceManager(LoggingConfigurable):
                     api.read_namespaced_service_account, name, namespace
                 ),
             )
+            if not service_account.secrets:
+                return False
+            secret_name = service_account.secrets[0].name
+            secret = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(
+                    api.read_namespaced_secret, secret_name, namespace
+                ),
+            )
+            return secret.metadata.name == secret_name
         except gen.TimeoutError:
             return False
-        else:
-            return service_account.secrets != []
+        except ApiException as e:
+            if e.status == 404:
+                self.log.debug("Waiting for secret for service account {name}")
+                return False
+            raise
