@@ -7,7 +7,6 @@ from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
-import kubernetes
 from jinja2 import Template
 from jupyterhub.utils import exponential_backoff
 from kubernetes import client
@@ -49,18 +48,6 @@ class ResourceManager(LoggingConfigurable):
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
 
-        # Load Kubernetes configuration.  This will also be done by
-        # KubeSpawner, but since this class is created before the spawner and
-        # we want to create Kubernetes clients here, we have to do it
-        # ourselves.
-        kubernetes.config.load_incluster_config()
-
-        # Use the kubespawner utility function to manage single shared clients
-        # of the various types we need.
-        self.k8s_api = shared_client("ApiClient")
-        self.custom_api = shared_client("CustomObjectsApi")
-        self.k8s_client = shared_client("CoreV1Api")
-
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
@@ -90,9 +77,10 @@ class ResourceManager(LoggingConfigurable):
         resources to delete, especially when new things may be dynamically
         created outside of the hub, like dask.
         """
+        api = shared_client("CoreV1Api")
         await gen.with_timeout(
             timedelta(seconds=spawner.k8s_api_request_timeout),
-            spawner.asynchronize(self.k8s_client.delete_namespace, namespace),
+            spawner.asynchronize(api.delete_namespace, namespace),
         )
 
     async def _create_lab_environment_configmap(
@@ -125,6 +113,8 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
+        api_client = shared_client("ApiClient")
+        custom_api = shared_client("CustomObjectsApi")
         template_values = await self._build_template_values(spawner, options)
 
         # Generate the list of additional user resources from the template.
@@ -156,7 +146,7 @@ class ResourceManager(LoggingConfigurable):
                 await gen.with_timeout(
                     timedelta(seconds=spawner.k8s_api_request_timeout),
                     spawner.asynchronize(
-                        self.custom_api.create_namespaced_custom_object,
+                        custom_api.create_namespaced_custom_object,
                         body=resource,
                         group=crd_parser.group,
                         version=crd_parser.version,
@@ -168,7 +158,7 @@ class ResourceManager(LoggingConfigurable):
                 await gen.with_timeout(
                     timedelta(seconds=spawner.k8s_api_request_timeout),
                     spawner.asynchronize(
-                        create_from_dict, self.k8s_api, resource
+                        create_from_dict, api_client, resource
                     ),
                 )
 
@@ -199,6 +189,7 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
+        api_client = shared_client("ApiClient")
         dask_template = await spawner.get_pod_manifest()
 
         # Here we make a few mangles to the jupyter pod manifest
@@ -220,7 +211,7 @@ class ResourceManager(LoggingConfigurable):
         # alone doesn't.
         dask_yaml_stream = StringIO()
         self.yaml.dump(
-            self.k8s_api.sanitize_for_serialization(dask_template),
+            api_client.sanitize_for_serialization(dask_template),
             dask_yaml_stream,
         )
         return dask_yaml_stream.getvalue()
@@ -271,10 +262,11 @@ class ResourceManager(LoggingConfigurable):
             `True` if the namespace has been deleted, `False` if it still
             exists
         """
+        api = shared_client("CoreV1Api")
         try:
             namespace = await gen.with_timeout(
                 timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(self.k8s_client.read_namespace, name),
+                spawner.asynchronize(api.read_namespace, name),
             )
             if namespace.status.phase != "Terminating":
                 # Paranoia to ensure that we don't delete some random service
@@ -283,9 +275,7 @@ class ResourceManager(LoggingConfigurable):
                 self.log.warning(f"Deleting abandoned namespace {name}")
                 await gen.with_timeout(
                     timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(
-                        self.k8s_client.delete_namespace, name
-                    ),
+                    spawner.asynchronize(api.delete_namespace, name),
                 )
             return False
         except gen.TimeoutError:
@@ -306,13 +296,12 @@ class ResourceManager(LoggingConfigurable):
             `True` once the secret exists, `False` otherwise (so it can be
             called from ``exponential_backoff``)
         """
+        api = shared_client("CoreV1Api")
         try:
             service_account = await gen.with_timeout(
                 timedelta(seconds=spawner.k8s_api_request_timeout),
                 spawner.asynchronize(
-                    self.k8s_client.read_namespaced_service_account,
-                    name,
-                    namespace,
+                    api.read_namespaced_service_account, name, namespace
                 ),
             )
         except gen.TimeoutError:
