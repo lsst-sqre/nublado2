@@ -11,6 +11,7 @@ import kubernetes
 from jinja2 import Template
 from jupyterhub.utils import exponential_backoff
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 from kubernetes.utils import create_from_dict
 from kubespawner.clients import shared_client
 from ruamel.yaml import YAML
@@ -66,6 +67,15 @@ class ResourceManager(LoggingConfigurable):
         """Create the user resources for this spawning session."""
         await self.provisioner.provision_homedir(spawner)
         try:
+            await exponential_backoff(
+                partial(
+                    self._wait_for_namespace_deletion,
+                    spawner,
+                    spawner.namespace,
+                ),
+                f"Namespace {spawner.namespace} still being deleted",
+                timeout=spawner.k8s_api_request_retry_timeout,
+            )
             await self._create_kubernetes_resources(spawner, options)
         except Exception:
             self.log.exception("Exception creating user resource!")
@@ -239,6 +249,46 @@ class ResourceManager(LoggingConfigurable):
         }
         self.log.debug(f"Template values={template_values}")
         return template_values
+
+    async def _wait_for_namespace_deletion(
+        self, spawner: KubeSpawner, name: str
+    ) -> bool:
+        """Waits for the user's namespace to be deleted.
+
+        If the namespace exists but has not been marked for deletion, try to
+        delete it.  If we're spawning a new lab while the namespace still
+        exists, that means something has gone wrong with the user's lab and
+        there's nothing salvagable.
+
+        Returns
+        -------
+        done : `bool`
+            `True` if the namespace has been deleted, `False` if it still
+            exists
+        """
+        try:
+            namespace = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(self.k8s_client.read_namespace, name),
+            )
+            if namespace.status.phase != "Terminating":
+                # Paranoia to ensure that we don't delete some random service
+                # namespace if something weird happens.
+                assert name.startswith("nublado2-")
+                self.log.warning(f"Deleting abandoned namespace {name}")
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(
+                        self.k8s_client.delete_namespace, name
+                    ),
+                )
+            return False
+        except gen.TimeoutError:
+            return False
+        except ApiException as e:
+            if e.status == 404:
+                return True
+            raise
 
     async def _wait_for_service_account_token(
         self, spawner: KubeSpawner, name: str, namespace: str
