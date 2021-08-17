@@ -118,8 +118,6 @@ class ResourceManager(LoggingConfigurable):
         template_values = await self._build_template_values(spawner, options)
 
         # Generate the list of additional user resources from the template.
-        self.log.debug("Template:")
-        self.log.debug(self.nublado_config.user_resources_template)
         t = Template(self.nublado_config.user_resources_template)
         templated_user_resources = t.render(template_values)
         self.log.debug("Generated user resources:")
@@ -221,7 +219,6 @@ class ResourceManager(LoggingConfigurable):
     ) -> Dict[str, Any]:
         """Construct the template variables for Jinja templating."""
         auth_state = await spawner.user.get_auth_state()
-        self.log.debug(f"Auth state={auth_state}")
         groups = auth_state["groups"]
 
         # Build a comma separated list of group:gid
