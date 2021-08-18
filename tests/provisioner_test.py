@@ -7,7 +7,6 @@ import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
-import kubernetes
 import pytest
 from aioresponses import CallbackResult, aioresponses
 from jupyterhub.spawner import Spawner
@@ -66,10 +65,7 @@ def build_handler(
 
 @pytest.mark.asyncio
 async def test_provision() -> None:
-    with patch.object(kubernetes, "config"):
-        resource_manager = ResourceManager()
-
-    # AsyncMock was introduced in Python 3.8, so sadly we can't use it yet.
+    resource_manager = ResourceManager()
     spawner = Mock(spec=Spawner)
     spawner.user = Mock(spec=User)
     spawner.user.name = "someuser"
@@ -77,6 +73,8 @@ async def test_provision() -> None:
         "uid": 1234,
         "groups": [{"name": "foo", "id": 1234}],
     }
+
+    # AsyncMock was introduced in Python 3.8, so sadly we can't use it yet.
     if sys.version_info < (3, 8):
         spawner.user.get_auth_state.return_value = asyncio.Future()
         spawner.user.get_auth_state.return_value.set_result(auth_state)

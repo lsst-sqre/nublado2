@@ -7,7 +7,6 @@ import sys
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-import kubernetes
 import pytest
 from jupyterhub.user import User
 from kubernetes.client import (
@@ -199,8 +198,7 @@ async def test_create_kubernetes_resources(
         digest="sha256:123456789abcdef",
     )
 
-    with patch.object(kubernetes, "config"):
-        resource_manager = ResourceManager()
+    resource_manager = ResourceManager()
     await resource_manager._create_kubernetes_resources(spawner, options)
 
     assert sorted(
