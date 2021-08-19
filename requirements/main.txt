@@ -292,12 +292,13 @@ jupyterhub-idle-culler==1.1 \
     --hash=sha256:45bceffeea8758b60e1f60650bc3de0d0d1e5f774623793db268ded1fa0cbdcb \
     --hash=sha256:600b2713f90ecc475f690747d1ec02bcae8f44fa7f3e51a71e400727895631d8
     # via -r requirements/main.in
-https://github.com/cbanek/kubespawner/archive/f2810911a7d5206535db52a8fd5762bd28878975.zip \
-    --hash=sha256:dbf75280cbaedc5aef84f038edca34fc8a656bf1ef591beb67ee605c8bfe9ba1
+jupyterhub-kubespawner==1.1.0 \
+    --hash=sha256:39775f30546de7dcdbf324ae468b50829daf3742604ab01e6023883230ee0ffd \
+    --hash=sha256:867d7d364be870e72b9ac81fa90c167cc208d8d1185d58e80e6e75692eb2bdeb
     # via -r requirements/main.in
-kubernetes==17.17.0 \
-    --hash=sha256:225a95a0aadbd5b645ab389d941a7980db8cdad2a776fde64d1b43fc3299bde9 \
-    --hash=sha256:c69b318696ba797dcf63eb928a8d4370c52319f4140023c502d7dfdf2080eb79
+kubernetes==18.20.0 \
+    --hash=sha256:0c72d00e7883375bd39ae99758425f5e6cb86388417cf7cc84305c211b2192cf \
+    --hash=sha256:ff31ec17437293e7d4e1459f1228c42d27c7724dfb56b4868aba7a901a5b72c9
     # via jupyterhub-kubespawner
 mako==1.1.4 \
     --hash=sha256:17831f0b7087c313c0ffae2bcbbd3c1d5ba9eeac9c38f2eb7b50e8c99fe9d5ab \
@@ -691,6 +692,7 @@ tornado==6.1 \
     --hash=sha256:fa2ba70284fa42c2a5ecb35e322e68823288a4251f9ba9cc77be04ae15eada68 \
     --hash=sha256:fba85b6cd9c39be262fcd23865652920832b61583de2a2ca907dbd8e8a8c81e5
     # via
+    #   -r requirements/main.in
     #   jupyterhub
     #   jupyterhub-idle-culler
 traitlets==5.0.5 \

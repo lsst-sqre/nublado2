@@ -13,6 +13,7 @@ inflect
 jinja2
 jupyterhub==1.3.0
 jupyterhub-idle-culler
-https://github.com/cbanek/kubespawner/archive/f2810911a7d5206535db52a8fd5762bd28878975.zip
+jupyterhub-kubespawner
 psycopg2
 ruamel.yaml
+tornado

@@ -1,13 +1,20 @@
+"""Spawn and delete Kubernetes resources other than the pod."""
+
 from __future__ import annotations
 
+from datetime import timedelta
+from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
-import kubernetes
 from jinja2 import Template
+from jupyterhub.utils import exponential_backoff
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 from kubernetes.utils import create_from_dict
+from kubespawner.clients import shared_client
 from ruamel.yaml import YAML
+from tornado import gen
 from traitlets.config import LoggingConfigurable
 
 from nublado2.crdparser import CRDParser
@@ -17,23 +24,23 @@ from nublado2.provisioner import Provisioner
 if TYPE_CHECKING:
     from typing import Any, Dict
 
-    from jupyterhub.spawner import Spawner
+    from jupyterhub.kubespawner import KubeSpawner
 
     from nublado2.selectedoptions import SelectedOptions
 
-# Load Kubernetes configuration.  Because we create global class variables for
-# the Kubernetes API, this has to be done during module load.
-kubernetes.config.load_incluster_config()
-
 
 class ResourceManager(LoggingConfigurable):
-    # These k8s clients don't copy well with locks, connection,
-    # pools, locks, etc.  Copying seems to happen under the hood of the
-    # LoggingConfigurable base class, so just have them be class variables.
-    # Should be safe to share these, and better to have fewer of them.
-    k8s_api = client.ApiClient()
-    custom_api = client.CustomObjectsApi()
-    k8s_client = client.CoreV1Api()
+    """Create additional Kubernetes resources when spawning labs.
+
+    This is conceptually a subclass of KubeSpawner but it's patched in via
+    hooks rather than as a proper subclass.  It creates (or deletes) all of
+    the other resources we want to create for a lab pod, and then delegates
+    creation of the pod itself to KubeSpawner.
+
+    This class makes extensive use of KubeSpawner internals to avoid
+    reimplementing the wheel and to work nicely with KubeSpawner and its
+    concurrency model.
+    """
 
     def __init__(self) -> None:
         self.nublado_config = NubladoConfig()
@@ -42,18 +49,42 @@ class ResourceManager(LoggingConfigurable):
         self.yaml.indent(mapping=2, sequence=4, offset=2)
 
     async def create_user_resources(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         """Create the user resources for this spawning session."""
         await self.provisioner.provision_homedir(spawner)
         try:
+            await exponential_backoff(
+                partial(
+                    self._wait_for_namespace_deletion,
+                    spawner,
+                    spawner.namespace,
+                ),
+                f"Namespace {spawner.namespace} still being deleted",
+                timeout=spawner.k8s_api_request_retry_timeout,
+            )
             await self._create_kubernetes_resources(spawner, options)
         except Exception:
             self.log.exception("Exception creating user resource!")
             raise
 
-    def _create_lab_environment_configmap(
-        self, spawner: Spawner, template_values: Dict[str, Any]
+    async def delete_user_resources(
+        self, spawner: KubeSpawner, namespace: str
+    ) -> None:
+        """Clean up a Jupyter lab by deleting the whole namespace.
+
+        The reason is it's easier to do this than try to make a list of
+        resources to delete, especially when new things may be dynamically
+        created outside of the hub, like dask.
+        """
+        api = shared_client("CoreV1Api")
+        await gen.with_timeout(
+            timedelta(seconds=spawner.k8s_api_request_timeout),
+            spawner.asynchronize(api.delete_namespace, namespace),
+        )
+
+    async def _create_lab_environment_configmap(
+        self, spawner: KubeSpawner, template_values: Dict[str, Any]
     ) -> None:
         """Create the ConfigMap that holds environment settings for the lab."""
         environment = {}
@@ -73,16 +104,20 @@ class ResourceManager(LoggingConfigurable):
             ),
             data=environment,
         )
-        self.k8s_client.create_namespaced_config_map(spawner.namespace, body)
+        await exponential_backoff(
+            partial(spawner._make_create_resource_request, "config_map", body),
+            f"Could not create ConfigMap {spawner.namespace}/lab-environment",
+            timeout=spawner.k8s_api_request_retry_timeout,
+        )
 
     async def _create_kubernetes_resources(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
+        api_client = shared_client("ApiClient")
+        custom_api = shared_client("CustomObjectsApi")
         template_values = await self._build_template_values(spawner, options)
 
         # Generate the list of additional user resources from the template.
-        self.log.debug("Template:")
-        self.log.debug(self.nublado_config.user_resources_template)
         t = Template(self.nublado_config.user_resources_template)
         templated_user_resources = t.render(template_values)
         self.log.debug("Generated user resources:")
@@ -91,6 +126,7 @@ class ResourceManager(LoggingConfigurable):
 
         # Add in the standard labels and annotations common to every resource
         # and create the resources.
+        service_account = None
         for resource in resources:
             if "metadata" not in resource:
                 resource["metadata"] = {}
@@ -105,24 +141,53 @@ class ResourceManager(LoggingConfigurable):
             api_version = resource["apiVersion"]
             if "." in api_version and ".k8s.io/" not in api_version:
                 crd_parser = CRDParser.from_crd_body(resource)
-                self.custom_api.create_namespaced_custom_object(
-                    body=resource,
-                    group=crd_parser.group,
-                    version=crd_parser.version,
-                    namespace=spawner.namespace,
-                    plural=crd_parser.plural,
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(
+                        custom_api.create_namespaced_custom_object,
+                        body=resource,
+                        group=crd_parser.group,
+                        version=crd_parser.version,
+                        namespace=spawner.namespace,
+                        plural=crd_parser.plural,
+                    ),
                 )
             else:
-                create_from_dict(self.k8s_api, resource)
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(
+                        create_from_dict, api_client, resource
+                    ),
+                )
+
+            # If this was a service account, note its name.
+            if resource["kind"] == "ServiceAccount":
+                service_account = resource["metadata"]["name"]
 
         # Construct the lab environment ConfigMap.  This is constructed from
         # configuration settings and doesn't use a resource template like
         # other resources.  This has to be done last, becuase the namespace is
         # created from the user resources template.
-        self._create_lab_environment_configmap(spawner, template_values)
+        await self._create_lab_environment_configmap(spawner, template_values)
 
-    async def _build_dask_template(self, spawner: Spawner) -> str:
+        # Wait for the service account to generate a token before proceeding.
+        # Otherwise, we may try to create the pod before the service account
+        # token exists and Kubernetes will object.
+        if service_account:
+            await exponential_backoff(
+                partial(
+                    self._wait_for_service_account_token,
+                    spawner,
+                    service_account,
+                    spawner.namespace,
+                ),
+                f"Service account {service_account} has no token",
+                timeout=spawner.k8s_api_request_retry_timeout,
+            )
+
+    async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
+        api_client = shared_client("ApiClient")
         dask_template = await spawner.get_pod_manifest()
 
         # Here we make a few mangles to the jupyter pod manifest
@@ -144,17 +209,16 @@ class ResourceManager(LoggingConfigurable):
         # alone doesn't.
         dask_yaml_stream = StringIO()
         self.yaml.dump(
-            self.k8s_api.sanitize_for_serialization(dask_template),
+            api_client.sanitize_for_serialization(dask_template),
             dask_yaml_stream,
         )
         return dask_yaml_stream.getvalue()
 
     async def _build_template_values(
-        self, spawner: Spawner, options: SelectedOptions
+        self, spawner: KubeSpawner, options: SelectedOptions
     ) -> Dict[str, Any]:
         """Construct the template variables for Jinja templating."""
         auth_state = await spawner.user.get_auth_state()
-        self.log.debug(f"Auth state={auth_state}")
         groups = auth_state["groups"]
 
         # Build a comma separated list of group:gid
@@ -179,10 +243,78 @@ class ResourceManager(LoggingConfigurable):
         self.log.debug(f"Template values={template_values}")
         return template_values
 
-    def delete_user_resources(self, namespace: str) -> None:
-        """Clean up a jupyterlab by deleting the whole namespace.
+    async def _wait_for_namespace_deletion(
+        self, spawner: KubeSpawner, name: str
+    ) -> bool:
+        """Waits for the user's namespace to be deleted.
 
-        The reason is it's easier to do this than try to make a list
-        of resources to delete, especially when new things may be
-        dynamically created outside of the hub, like dask."""
-        self.k8s_client.delete_namespace(name=namespace)
+        If the namespace exists but has not been marked for deletion, try to
+        delete it.  If we're spawning a new lab while the namespace still
+        exists, that means something has gone wrong with the user's lab and
+        there's nothing salvagable.
+
+        Returns
+        -------
+        done : `bool`
+            `True` if the namespace has been deleted, `False` if it still
+            exists
+        """
+        api = shared_client("CoreV1Api")
+        try:
+            namespace = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(api.read_namespace, name),
+            )
+            if namespace.status.phase != "Terminating":
+                # Paranoia to ensure that we don't delete some random service
+                # namespace if something weird happens.
+                assert name.startswith("nublado2-")
+                self.log.warning(f"Deleting abandoned namespace {name}")
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(api.delete_namespace, name),
+                )
+            return False
+        except gen.TimeoutError:
+            return False
+        except ApiException as e:
+            if e.status == 404:
+                return True
+            raise
+
+    async def _wait_for_service_account_token(
+        self, spawner: KubeSpawner, name: str, namespace: str
+    ) -> bool:
+        """Waits for a service account to spawn an associated token.
+
+        Returns
+        -------
+        done : `bool`
+            `True` once the secret exists, `False` otherwise (so it can be
+            called from ``exponential_backoff``)
+        """
+        api = shared_client("CoreV1Api")
+        try:
+            service_account = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(
+                    api.read_namespaced_service_account, name, namespace
+                ),
+            )
+            if not service_account.secrets:
+                return False
+            secret_name = service_account.secrets[0].name
+            secret = await gen.with_timeout(
+                timedelta(seconds=spawner.k8s_api_request_timeout),
+                spawner.asynchronize(
+                    api.read_namespaced_secret, secret_name, namespace
+                ),
+            )
+            return secret.metadata.name == secret_name
+        except gen.TimeoutError:
+            return False
+        except ApiException as e:
+            if e.status == 404:
+                self.log.debug("Waiting for secret for service account {name}")
+                return False
+            raise
