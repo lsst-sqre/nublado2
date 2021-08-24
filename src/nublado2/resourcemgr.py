@@ -73,14 +73,14 @@ class ResourceManager(LoggingConfigurable):
     ) -> None:
         """Clean up a Jupyter lab by deleting the whole namespace.
 
-        The reason is it's easier to do this than try to make a list of
-        resources to delete, especially when new things may be dynamically
-        created outside of the hub, like dask.
+        It's easier to do this than try to make a list of resources to delete,
+        especially when new things may be dynamically created outside of the
+        hub, like dask.
         """
-        api = shared_client("CoreV1Api")
-        await gen.with_timeout(
-            timedelta(seconds=spawner.k8s_api_request_timeout),
-            spawner.asynchronize(api.delete_namespace, namespace),
+        await exponential_backoff(
+            partial(self._wait_for_namespace_deletion, spawner, namespace),
+            f"Namespace {namespace} still being deleted",
+            timeout=spawner.k8s_api_request_retry_timeout,
         )
 
     async def _create_lab_environment_configmap(
@@ -269,7 +269,7 @@ class ResourceManager(LoggingConfigurable):
                 # Paranoia to ensure that we don't delete some random service
                 # namespace if something weird happens.
                 assert name.startswith("nublado2-")
-                self.log.warning(f"Deleting abandoned namespace {name}")
+                self.log.info(f"Deleting namespace {name}")
                 await gen.with_timeout(
                     timedelta(seconds=spawner.k8s_api_request_timeout),
                     spawner.asynchronize(api.delete_namespace, name),
