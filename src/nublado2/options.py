@@ -48,7 +48,8 @@ function selectDropdown() {
 
     <input type="radio" name="image_list"
         id="{{ dropdown_sentinel }}"
-        value="{{ dropdown_sentinel }}">
+        value="{{ dropdown_sentinel }}
+        {% if not cached_images %} checked {% endif %}">
     Select uncached image (slower start):<br />
     <select name="image_dropdown" onchange="selectDropdown()">
     {% for i in all_images %}

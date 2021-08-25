@@ -18,14 +18,15 @@ class SelectedOptions:
 
         # Each parameter comes back as a list, even if only one is
         # selected.
-        image_list = options["image_list"][0]
-        image_dropdown = options["image_dropdown"][0]
+        if "image_list" in options:
+            image = options["image_list"][0]
+            if image == DROPDOWN_SENTINEL_VALUE:
+                image = options["image_dropdown"][0]
+        else:
+            image = options["image_dropdown"][0]
         size_name = options["size"][0]
 
-        if image_list == DROPDOWN_SENTINEL_VALUE:
-            self._image_info = ImageInfo.from_packed_string(image_dropdown)
-        else:
-            self._image_info = ImageInfo.from_packed_string(image_list)
+        self._image_info = ImageInfo.from_packed_string(image)
 
         nc = NubladoConfig()
         self._size = nc.sizes[size_name]
