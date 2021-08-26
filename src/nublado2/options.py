@@ -15,7 +15,7 @@ options_template = Template(
 
 <script>
 function selectDropdown() {
-    document.forms['spawn_form'].image_list.value = '{{ dropdown_sentinel }}';
+    document.getElementById('{{ dropdown_sentinel }}').checked = true;
 }
 </script>
 
@@ -40,7 +40,7 @@ function selectDropdown() {
 -->
 {% for i in cached_images %}
     <input type="radio" name="image_list"
-     id="{{ i.display_name }}" value="{{ i.packed_string }}"
+     id="image{{ loop.index }}" value="{{ i.packed_string }}"
      {% if loop.first %} checked {% endif %}
     >
     {{ i.display_name }}<br />
@@ -48,10 +48,11 @@ function selectDropdown() {
 
     <input type="radio" name="image_list"
         id="{{ dropdown_sentinel }}"
-        value="{{ dropdown_sentinel }}
-        {% if not cached_images %} checked {% endif %}">
+        value="{{ dropdown_sentinel }}"
+        {% if not cached_images %} checked {% endif %}
+    >
     Select uncached image (slower start):<br />
-    <select name="image_dropdown" onchange="selectDropdown()">
+    <select name="image_dropdown" onclick="selectDropdown()">
     {% for i in all_images %}
         <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
