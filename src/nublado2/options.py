@@ -25,6 +25,10 @@ function selectDropdown() {
         padding: 2%;
         vertical-align: top;
     }
+    .radio label,
+    .checkbox label {
+        padding-left: 0px;
+    }
 </style>
 
 <table width="100%">
@@ -36,14 +40,13 @@ function selectDropdown() {
 <tr>
 
 <td width="50%">
-<!--
--->
+  <div class="radio radio-inline">
 {% for i in cached_images %}
     <input type="radio" name="image_list"
      id="image{{ loop.index }}" value="{{ i.packed_string }}"
      {% if loop.first %} checked {% endif %}
     >
-    {{ i.display_name }}<br />
+    <label for="image{{ loop.index }}">{{ i.display_name }}</label><br />
 {% endfor %}
 
     <input type="radio" name="image_list"
@@ -51,30 +54,43 @@ function selectDropdown() {
         value="{{ dropdown_sentinel }}"
         {% if not cached_images %} checked {% endif %}
     >
-    Select uncached image (slower start):<br />
+    <label for="{{ dropdown_sentinel }}">
+      Select uncached image (slower start):
+    </label><br />
     <select name="image_dropdown" onclick="selectDropdown()">
     {% for i in all_images %}
         <option value="{{ i.packed_string }}">{{ i.display_name }}</option>
     {% endfor %}
     </select>
+  </div>
 </td>
 
 <td width="50%">
+  <div class="radio radio-inline">
 {% for s in sizes %}
     <input type="radio" name="size"
      id="{{ s.name }}" value="{{ s.name }}"
      {% if loop.first %} checked {% endif %}
     >
-    {{ s.name }} ({{ s.cpu }} CPU, {{ s.ram }} RAM)<br>
+    <label for="{{ s.name }}">
+      {{ s.name }} ({{ s.cpu }} CPU, {{ s.ram }} RAM)
+    </label><br />
 {% endfor %}
+  </div>
 
-    <br>
-    <input type="checkbox"
+  <br />
+  <br />
+  <div class="checkbox checkbox-inline">
+    <input type="checkbox" id="enable_debug"
      name="enable_debug" value="true">
-        Enable debug logs<br>
-    <input type="checkbox"
+    <label for="enable_debug">Enable debug logs</label><br />
+
+    <input type="checkbox" id="clear_dotlocal"
      name="clear_dotlocal" value="true">
-        Clear <tt>.local</tt> directory (caution!)<br>
+    <label for="clear_dotlocal">
+      Clear <tt>.local</tt> directory (caution!)
+    </label><br />
+  </div>
 </td>
 
 </tr>
