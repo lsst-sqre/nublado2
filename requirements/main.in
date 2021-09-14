@@ -17,3 +17,10 @@ jupyterhub-kubespawner
 psycopg2
 ruamel.yaml
 tornado
+
+# Add an explicit dependency on importlib-resources to generate hashes when
+# the requirements file is rebuilt on Python 3.9.  It's not required for
+# Python 3.9, but is for Python 3.7, and without this dependency,
+# installation will fail on Python 3.7.  This is a transitive dependency
+# from jupyterhub -> alembic.
+importlib-resources
