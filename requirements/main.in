@@ -11,7 +11,7 @@ cchardet
 importlib_metadata
 inflect
 jinja2
-jupyterhub==1.3.0
+jupyterhub
 jupyterhub-idle-culler
 jupyterhub-kubespawner
 psycopg2
