@@ -9,9 +9,10 @@ aiohttp
 aiodns
 cchardet
 importlib_metadata
+importlib-resources
 inflect
 jinja2
-jupyterhub==1.3.0
+jupyterhub
 jupyterhub-idle-culler
 jupyterhub-kubespawner
 psycopg2
