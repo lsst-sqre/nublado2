@@ -9,6 +9,7 @@ aiohttp
 aiodns
 cchardet
 importlib_metadata
+importlib-resources
 inflect
 jinja2
 jupyterhub
