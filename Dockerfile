@@ -27,4 +27,3 @@ WORKDIR /home/jovyan
 USER jovyan
 EXPOSE 8000
 EXPOSE 8081
-ENTRYPOINT ["jupyterhub", "--config", "/etc/jupyterhub/jupyterhub_config.py"]
