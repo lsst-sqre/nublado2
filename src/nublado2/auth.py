@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
     from jupyterhub.app import JupyterHub
+    from jupyterhub.user import User
     from tornado.httputil import HTTPHeaders
     from tornado.web import RequestHandler
 
@@ -65,7 +66,7 @@ class GafaelfawrAuthenticator(Authenticator):
     authenticate the user "in place" in the handler of whatever page the user
     first went to, without any redirects.  This would be slightly more
     efficient and the code appears to handle it, but the current documentation
-    (as of 1.1.0) explicitly says to not override ``get_authenticated_user``.
+    (as of 1.5.0) explicitly says to not override ``get_authenticated_user``.
 
     This implementation therefore takes the well-documented path of a new
     handler and a redirect from the built-in login handler, on the theory that
@@ -108,6 +109,12 @@ class GafaelfawrAuthenticator(Authenticator):
         case).
         """
         return url_path_join(base_url, "gafaelfawr/login")
+
+    async def refresh_user(
+        self, user: User, handler: Optional[RequestHandler] = None
+    ) -> bool:
+        """Tell JupyterHub to always refresh the user's token."""
+        return False
 
 
 class GafaelfawrLoginHandler(BaseHandler):
