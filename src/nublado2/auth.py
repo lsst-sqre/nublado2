@@ -114,6 +114,11 @@ class GafaelfawrAuthenticator(Authenticator):
         self, user: User, handler: Optional[RequestHandler] = None
     ) -> bool:
         """Tell JupyterHub to always refresh the user's token."""
+        if handler:
+            token = handler.request.headers.get("X-Auth-Request-Token")
+            if token:
+                auth_state = await user.get_auth_state()
+                return token == auth_state["token"]
         return False
 
 
