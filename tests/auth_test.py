@@ -15,7 +15,11 @@ from aioresponses import CallbackResult, aioresponses
 from tornado import web
 from tornado.httputil import HTTPHeaders
 
-from nublado2.auth import GafaelfawrAuthenticator, GafaelfawrLoginHandler
+from nublado2.auth import (
+    GafaelfawrAuthenticator,
+    GafaelfawrLoginHandler,
+    _build_auth_info,
+)
 
 if TYPE_CHECKING:
     from typing import Any, AsyncGenerator, Callable, Dict
@@ -57,25 +61,25 @@ async def test_login_handler(config_mock: MagicMock) -> None:
     # No headers.
     with aioresponses() as m:
         with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(HTTPHeaders())
+            await _build_auth_info(HTTPHeaders())
 
     # Invalid token.
     with aioresponses() as m:
         m.get(url, status=403)
         with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
+            await _build_auth_info(headers)
 
     # Bad API response payload.
     with aioresponses() as m:
         m.get(url, payload={}, status=200)
         with pytest.raises(web.HTTPError):
-            await GafaelfawrLoginHandler._build_auth_info(headers)
+            await _build_auth_info(headers)
 
     # Test minimum data.
     with aioresponses() as m:
         handler = build_userinfo_handler({"username": "foo", "uid": 1234})
         m.get(url, callback=handler)
-        assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
+        assert await _build_auth_info(headers) == {
             "name": "foo",
             "auth_state": {
                 "username": "foo",
@@ -98,7 +102,7 @@ async def test_login_handler(config_mock: MagicMock) -> None:
             }
         )
         m.get(url, callback=handler)
-        assert await GafaelfawrLoginHandler._build_auth_info(headers) == {
+        assert await _build_auth_info(headers) == {
             "name": "bar",
             "auth_state": {
                 "username": "bar",
