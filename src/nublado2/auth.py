@@ -16,10 +16,53 @@ if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
     from jupyterhub.app import JupyterHub
+    from jupyterhub.user import User
     from tornado.httputil import HTTPHeaders
     from tornado.web import RequestHandler
 
     Route = Tuple[str, Type[BaseHandler]]
+
+
+async def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
+    """Construct the authentication information for a user.
+
+    Retrieve the token from the headers, use that token to retrieve the
+    metadata for the token, and use that data to build an auth info dict
+    in the format expected by JupyterHub.  This is in a separate method so
+    that it can be unit-tested.
+    """
+    token = headers.get("X-Auth-Request-Token")
+    if not token:
+        raise web.HTTPError(401, "No request token")
+
+    config = NubladoConfig()
+    if not config.gafaelfawr_token:
+        raise web.HTTPError(500, "gafaelfawr_token not set in configuration")
+    if not config.base_url:
+        raise web.HTTPError(500, "base_url not set in configuration")
+
+    # Retrieve the token metadata.
+    api_url = url_path_join(config.base_url, "/auth/api/v1/user-info")
+    session = await get_session()
+    resp = await session.get(
+        api_url, headers={"Authorization": f"bearer {token}"}
+    )
+    if resp.status != 200:
+        raise web.HTTPError(500, "Cannot reach token analysis API")
+    try:
+        auth_state = await resp.json()
+    except Exception:
+        raise web.HTTPError(500, "Cannot get information for token")
+    if "username" not in auth_state or "uid" not in auth_state:
+        raise web.HTTPError(403, "Request token is invalid")
+
+    auth_state["token"] = token
+    if "groups" not in auth_state:
+        auth_state["groups"] = []
+    return {
+        "name": auth_state["username"],
+        "auth_state": auth_state,
+    }
 
 
 class GafaelfawrAuthenticator(Authenticator):
@@ -65,7 +108,7 @@ class GafaelfawrAuthenticator(Authenticator):
     authenticate the user "in place" in the handler of whatever page the user
     first went to, without any redirects.  This would be slightly more
     efficient and the code appears to handle it, but the current documentation
-    (as of 1.1.0) explicitly says to not override ``get_authenticated_user``.
+    (as of 1.5.0) explicitly says to not override ``get_authenticated_user``.
 
     This implementation therefore takes the well-documented path of a new
     handler and a redirect from the built-in login handler, on the theory that
@@ -109,6 +152,22 @@ class GafaelfawrAuthenticator(Authenticator):
         """
         return url_path_join(base_url, "gafaelfawr/login")
 
+    async def refresh_user(
+        self, user: User, handler: Optional[RequestHandler] = None
+    ) -> Union[bool, Dict[str, Any]]:
+        """Tell JupyterHub to always refresh the user's token."""
+        if handler:
+            token = handler.request.headers.get("X-Auth-Request-Token")
+            if token:
+                auth_state = await user.get_auth_state()
+                if token == auth_state["token"]:
+                    return True
+            return await _build_auth_info(handler.request.headers)
+
+        # If running outside of a Tornado handler, we can't refresh the auth
+        # state, so assume that it is okay.
+        return True
+
 
 class GafaelfawrLoginHandler(BaseHandler):
     """Login handler for Gafaelfawr authentication.
@@ -120,7 +179,7 @@ class GafaelfawrLoginHandler(BaseHandler):
 
     async def get(self) -> None:
         """Handle GET to the login page."""
-        auth_info = await self._build_auth_info(self.request.headers)
+        auth_info = await _build_auth_info(self.request.headers)
 
         # Store the ancillary user information in the user database and create
         # or return the user object.  This call is unfortunately undocumented,
@@ -136,47 +195,3 @@ class GafaelfawrLoginHandler(BaseHandler):
         # whatever URL the user was trying to go to when JupyterHub decided
         # they needed to be authenticated.
         self.redirect(self.get_next_url(user))
-
-    @classmethod
-    async def _build_auth_info(cls, headers: HTTPHeaders) -> Dict[str, Any]:
-        """Construct the authentication information for a user.
-
-        Retrieve the token from the headers, use that token to retrieve the
-        metadata for the token, and use that data to build an auth info dict
-        in the format expected by JupyterHub.  This is in a separate method so
-        that it can be unit-tested.
-        """
-        token = headers.get("X-Auth-Request-Token")
-        if not token:
-            raise web.HTTPError(401, "No request token")
-
-        config = NubladoConfig()
-        if not config.gafaelfawr_token:
-            raise web.HTTPError(
-                500, "gafaelfawr_token not set in configuration"
-            )
-        if not config.base_url:
-            raise web.HTTPError(500, "base_url not set in configuration")
-
-        # Retrieve the token metadata.
-        api_url = url_path_join(config.base_url, "/auth/api/v1/user-info")
-        session = await get_session()
-        resp = await session.get(
-            api_url, headers={"Authorization": f"bearer {token}"}
-        )
-        if resp.status != 200:
-            raise web.HTTPError(500, "Cannot reach token analysis API")
-        try:
-            auth_state = await resp.json()
-        except Exception:
-            raise web.HTTPError(500, "Cannot get information for token")
-        if "username" not in auth_state or "uid" not in auth_state:
-            raise web.HTTPError(403, "Request token is invalid")
-
-        auth_state["token"] = token
-        if "groups" not in auth_state:
-            auth_state["groups"] = []
-        return {
-            "name": auth_state["username"],
-            "auth_state": auth_state,
-        }
