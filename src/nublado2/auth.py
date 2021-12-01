@@ -155,18 +155,27 @@ class GafaelfawrAuthenticator(Authenticator):
     async def refresh_user(
         self, user: User, handler: Optional[RequestHandler] = None
     ) -> Union[bool, Dict[str, Any]]:
-        """Tell JupyterHub to always refresh the user's token."""
-        if handler:
-            token = handler.request.headers.get("X-Auth-Request-Token")
-            if token:
-                auth_state = await user.get_auth_state()
-                if token == auth_state["token"]:
-                    return True
-            return await _build_auth_info(handler.request.headers)
-
+        """Optionally refresh the user's token."""
         # If running outside of a Tornado handler, we can't refresh the auth
         # state, so assume that it is okay.
-        return True
+        if not handler:
+            return True
+
+        # If there is no X-Auth-Request-Token header, this request did not go
+        # through the ingress and thus is coming from inside the cluster, such
+        # as requests to JupyterHub from a JupyterLab instance.  Allow
+        # JupyterHub to use its normal authentication logic
+        token = handler.request.headers.get("X-Auth-Request-Token")
+        if not token:
+            return True
+
+        # We have a new token.  If it doesn't match the token we have stored,
+        # replace the stored auth state with the new auth state.
+        auth_state = await user.get_auth_state()
+        if token == auth_state["token"]:
+            return True
+        else:
+            return await _build_auth_info(handler.request.headers)
 
 
 class GafaelfawrLoginHandler(BaseHandler):
