@@ -1,10 +1,14 @@
-FROM jupyterhub/jupyterhub:1.4 as base-image
+FROM jupyterhub/jupyterhub:1.5.0 as base-image
 
 # Update system packages
 COPY scripts/install-base-packages.sh .
-RUN ./install-base-packages.sh
+RUN ./install-base-packages.sh && rm install-base-packages.sh
 
 FROM base-image as dependencies-image
+
+# Install system packages only needed for building dependencies.
+COPY scripts/install-dependency-packages.sh .
+RUN ./install-dependency-packages.sh && rm install-dependency-packages.sh
 
 # Install the app's Python runtime dependencies
 COPY requirements/main.txt ./requirements.txt
