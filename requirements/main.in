@@ -19,7 +19,7 @@ tornado
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
 # lockstep with the base image in Dockerfile.
-jupyterhub==1.5.0
+jupyterhub==1.4.0
 
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.
