@@ -22,7 +22,7 @@ from nublado2.nublado_config import NubladoConfig
 from nublado2.provisioner import Provisioner
 
 if TYPE_CHECKING:
-    from typing import Any, Dict
+    from typing import Any, Callable, Dict
 
     from jupyterhub.kubespawner import KubeSpawner
 
@@ -56,11 +56,15 @@ class ResourceManager(LoggingConfigurable):
         try:
             await exponential_backoff(
                 partial(
-                    self._wait_for_namespace_deletion,
+                    self._wait_for_user_resource_deletion,
                     spawner,
                     spawner.namespace,
+                    options,
                 ),
-                f"Namespace {spawner.namespace} still being deleted",
+                (
+                    f"Extant user resources for {spawner.user.name} "
+                    + "still being deleted"
+                ),
                 timeout=spawner.k8s_api_request_retry_timeout,
             )
             await self._create_kubernetes_resources(spawner, options)
@@ -69,17 +73,25 @@ class ResourceManager(LoggingConfigurable):
             raise
 
     async def delete_user_resources(
-        self, spawner: KubeSpawner, namespace: str
+        self, spawner: KubeSpawner, namespace: str, options: SelectedOptions
     ) -> None:
         """Clean up a Jupyter lab by deleting the whole namespace.
 
         It's easier to do this than try to make a list of resources to delete,
         especially when new things may be dynamically created outside of the
         hub, like dask.
+
+        However, it doesn't work when we have non-namespaced resources,
+        specifically shadow volumes.  Those things need individual deletion.
         """
         await exponential_backoff(
-            partial(self._wait_for_namespace_deletion, spawner, namespace),
-            f"Namespace {namespace} still being deleted",
+            partial(
+                self._wait_for_user_resource_deletion,
+                spawner,
+                namespace,
+                options,
+            ),
+            f"User resources for {spawner.user.name} still being deleted",
             timeout=spawner.k8s_api_request_retry_timeout,
         )
 
@@ -110,19 +122,24 @@ class ResourceManager(LoggingConfigurable):
             timeout=spawner.k8s_api_request_retry_timeout,
         )
 
-    async def _create_kubernetes_resources(
-        self, spawner: KubeSpawner, options: SelectedOptions
-    ) -> None:
-        api_client = shared_client("ApiClient")
-        custom_api = shared_client("CustomObjectsApi")
-        template_values = await self._build_template_values(spawner, options)
-
+    async def _render_templated_resources(
+        self, template_values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         # Generate the list of additional user resources from the template.
         t = Template(self.nublado_config.user_resources_template)
         templated_user_resources = t.render(template_values)
         self.log.debug("Generated user resources:")
         self.log.debug(templated_user_resources)
         resources = self.yaml.load(templated_user_resources)
+        return resources
+
+    async def _create_kubernetes_resources(
+        self, spawner: KubeSpawner, options: SelectedOptions
+    ) -> None:
+        api_client = shared_client("ApiClient")
+        custom_api = shared_client("CustomObjectsApi")
+        template_values = await self._build_template_values(spawner, options)
+        resources = await self._render_templated_resources(template_values)
 
         # Add in the standard labels and annotations common to every resource
         # and create the resources.
@@ -166,7 +183,7 @@ class ResourceManager(LoggingConfigurable):
 
         # Construct the lab environment ConfigMap.  This is constructed from
         # configuration settings and doesn't use a resource template like
-        # other resources.  This has to be done last, becuase the namespace is
+        # other resources.  This has to be done last, because the namespace is
         # created from the user resources template.
         await self._create_lab_environment_configmap(spawner, template_values)
 
@@ -243,10 +260,11 @@ class ResourceManager(LoggingConfigurable):
         self.log.debug(f"Template values={template_values}")
         return template_values
 
-    async def _wait_for_namespace_deletion(
-        self, spawner: KubeSpawner, name: str
+    async def _wait_for_user_resource_deletion(
+        self, spawner: KubeSpawner, name: str, options: SelectedOptions
     ) -> bool:
-        """Waits for the user's namespace to be deleted.
+        """Waits for the user's namespace and any non-namespaced resources
+        to be deleted.
 
         If the namespace exists but has not been marked for deletion, try to
         delete it.  If we're spawning a new lab while the namespace still
@@ -260,6 +278,7 @@ class ResourceManager(LoggingConfigurable):
             exists
         """
         api = shared_client("CoreV1Api")
+        all_good = True
         try:
             namespace = await gen.with_timeout(
                 timedelta(seconds=spawner.k8s_api_request_timeout),
@@ -274,13 +293,43 @@ class ResourceManager(LoggingConfigurable):
                     timedelta(seconds=spawner.k8s_api_request_timeout),
                     spawner.asynchronize(api.delete_namespace, name),
                 )
-            return False
         except gen.TimeoutError:
-            return False
+            all_good = False  # Namespace wasn't deleted
         except ApiException as e:
-            if e.status == 404:
-                return True
-            raise
+            # A 404 is OK, because nonexistence is the desired state.
+            # Anything else is bad and should be re-raised.
+            # This will orphan later resources.
+            if e.status != 404:
+                raise
+
+        # Now the namespace is gone, and we need to find non-namespaced
+        #  resources that need deletion.
+
+        template_values = await self._build_template_values(spawner, options)
+        resources = await self._render_templated_resources(template_values)
+        deletion_methods: Dict[str, Callable[Any]] = {
+            "Volume": api.delete_persistent_volume
+        }
+        for res in resources:
+            rk = res["kind"]
+            api_call = deletion_methods.get(rk)
+            if not api_call:
+                continue
+            self.log.debug(f"Deleting non-namespaced resource {res}")
+            try:
+                await gen.with_timeout(
+                    timedelta(seconds=spawner.k8s_api_request_timeout),
+                    spawner.asynchronize(api_call, res),
+                )
+            except gen.TimeoutError:
+                all_good = False  # At least one resource wasn't deleted
+            except ApiException as e:
+                # A 404 is OK, because nonexistence is the desired state.
+                # Anything else is bad and should be re-raised
+                # This will orphan later resources.
+                if e.status != 404:
+                    raise
+        return all_good
 
     async def _wait_for_service_account_token(
         self, spawner: KubeSpawner, name: str, namespace: str
