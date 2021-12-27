@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:1.5.0 as base-image
+FROM jupyterhub/jupyterhub:2.0.1 as base-image
 
 # Update system packages
 COPY scripts/install-base-packages.sh .
