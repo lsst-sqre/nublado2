@@ -9,7 +9,6 @@ from jupyterhub.spawner import Spawner
 from tornado import web
 from traitlets.config import LoggingConfigurable
 
-from nublado2.http import get_session
 from nublado2.nublado_config import NubladoConfig
 
 __all__ = ["Provisioner"]
@@ -18,7 +17,8 @@ __all__ = ["Provisioner"]
 class Provisioner(LoggingConfigurable):
     """Provision home directories using the moneypenny service."""
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.nublado_config = NubladoConfig()
 
     async def provision_homedir(self, spawner: Spawner) -> None:

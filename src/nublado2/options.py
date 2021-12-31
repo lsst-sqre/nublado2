@@ -1,10 +1,10 @@
 from typing import List, Optional, Tuple
 
+from aiohttp import ClientSession
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
 from traitlets.config import LoggingConfigurable
 
-from nublado2.http import get_session
 from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 
@@ -121,19 +121,19 @@ class NubladoOptions(LoggingConfigurable):
         if not url:
             return ([], [])
 
-        session = await get_session()
-        r = await session.get(url)
-        if r.status != 200:
-            raise Exception(f"Error {r.status} from {url}")
+        async with ClientSession() as session:
+            r = await session.get(url)
+            if r.status != 200:
+                raise Exception(f"Error {r.status} from {url}")
 
-        body = await r.json()
+            body = await r.json()
 
-        cached_images = [
-            ImageInfo.from_cachemachine_entry(img) for img in body["images"]
-        ]
+            cached_images = [
+                ImageInfo.from_cachemachine_entry(img)
+                for img in body["images"]
+            ]
 
-        all_images = [
-            ImageInfo.from_cachemachine_entry(img) for img in body["all"]
-        ]
-
+            all_images = [
+                ImageInfo.from_cachemachine_entry(img) for img in body["all"]
+            ]
         return (cached_images, all_images)

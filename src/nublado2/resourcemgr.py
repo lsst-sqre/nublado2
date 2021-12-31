@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+import asyncio
+import os
 from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
 from jinja2 import Template
 from jupyterhub.utils import exponential_backoff
-from kubernetes import client
-from kubernetes.client.rest import ApiException
-from kubernetes.utils import create_from_dict
-from kubespawner.clients import shared_client
+from kubernetes_asyncio import client
+from kubernetes_asyncio.client.rest import ApiException
+from kubernetes_asyncio.utils import create_from_dict
 from ruamel.yaml import YAML
-from tornado import gen
 from traitlets.config import LoggingConfigurable
 
 from nublado2.crdparser import CRDParser
@@ -24,9 +23,18 @@ from nublado2.provisioner import Provisioner
 if TYPE_CHECKING:
     from typing import Any, Dict
 
-    from jupyterhub.kubespawner import KubeSpawner
+    from kubespawner import KubeSpawner
 
     from nublado2.selectedoptions import SelectedOptions
+
+
+def get_execution_namespace():
+    """Return Kubernetes namespace of this container."""
+    ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+    if os.path.exists(ns_path):
+        with open(ns_path) as f:
+            return f.read().strip()
+    return None
 
 
 class ResourceManager(LoggingConfigurable):
@@ -113,60 +121,60 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
-        api_client = shared_client("ApiClient")
-        custom_api = shared_client("CustomObjectsApi")
-        template_values = await self._build_template_values(spawner, options)
+        await spawner._set_k8s_client_configuration()
+        async with client.ApiClient() as api:
+            custom_api = client.CustomObjectsApi(api)
+            template_values = await self._build_template_values(
+                spawner, options
+            )
 
-        # Generate the list of additional user resources from the template.
-        t = Template(self.nublado_config.user_resources_template)
-        templated_user_resources = t.render(template_values)
-        self.log.debug("Generated user resources:")
-        self.log.debug(templated_user_resources)
-        resources = self.yaml.load(templated_user_resources)
+            # Generate the list of additional user resources from the template.
+            t = Template(self.nublado_config.user_resources_template)
+            templated_user_resources = t.render(template_values)
+            self.log.debug("Generated user resources:")
+            self.log.debug(templated_user_resources)
+            resources = self.yaml.load(templated_user_resources)
 
-        # Add in the standard labels and annotations common to every resource
-        # and create the resources.
-        service_account = None
-        for resource in resources:
-            if "metadata" not in resource:
-                resource["metadata"] = {}
-            resource["metadata"]["annotations"] = spawner.extra_annotations
-            resource["metadata"]["labels"] = spawner.extra_labels
+            # Add in the standard labels and annotations common to every
+            # resource and create the resources.
+            service_account = None
+            for resource in resources:
+                if "metadata" not in resource:
+                    resource["metadata"] = {}
+                resource["metadata"]["annotations"] = spawner.extra_annotations
+                resource["metadata"]["labels"] = spawner.extra_labels
 
-            # Custom resources cannot be created by create_from_dict:
-            # https://github.com/kubernetes-client/python/issues/740
-            #
-            # Detect those from the apiVersion field and handle them
-            # specially.
-            api_version = resource["apiVersion"]
-            if "." in api_version and ".k8s.io/" not in api_version:
-                crd_parser = CRDParser.from_crd_body(resource)
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(
-                        custom_api.create_namespaced_custom_object,
-                        body=resource,
-                        group=crd_parser.group,
-                        version=crd_parser.version,
-                        namespace=spawner.namespace,
-                        plural=crd_parser.plural,
-                    ),
-                )
-            else:
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(
-                        create_from_dict, api_client, resource
-                    ),
-                )
+                # Custom resources cannot be created by create_from_dict:
+                # https://github.com/kubernetes-client/python/issues/740
+                #
+                # Detect those from the apiVersion field and handle them
+                # specially.
+                api_version = resource["apiVersion"]
+                if "." in api_version and ".k8s.io/" not in api_version:
+                    crd_parser = CRDParser.from_crd_body(resource)
+                    await asyncio.wait_for(
+                        custom_api.create_namespaced_custom_object(
+                            body=resource,
+                            group=crd_parser.group,
+                            version=crd_parser.version,
+                            namespace=spawner.namespace,
+                            plural=crd_parser.plural,
+                        ),
+                        timeout=spawner.k8s_api_request_timeout,
+                    )
+                else:
+                    await asyncio.wait_for(
+                        create_from_dict(api, resource),
+                        timeout=spawner.k8s_api_request_timeout,
+                    )
 
-            # If this was a service account, note its name.
-            if resource["kind"] == "ServiceAccount":
-                service_account = resource["metadata"]["name"]
+                # If this was a service account, note its name.
+                if resource["kind"] == "ServiceAccount":
+                    service_account = resource["metadata"]["name"]
 
         # Construct the lab environment ConfigMap.  This is constructed from
         # configuration settings and doesn't use a resource template like
-        # other resources.  This has to be done last, becuase the namespace is
+        # other resources.  This has to be done last, because the namespace is
         # created from the user resources template.
         await self._create_lab_environment_configmap(spawner, template_values)
 
@@ -187,32 +195,33 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
-        api_client = shared_client("ApiClient")
-        dask_template = await spawner.get_pod_manifest()
+        await spawner._set_k8s_client_configuration()
+        async with client.ApiClient() as api:
+            dask_template = await spawner.get_pod_manifest()
 
-        # Here we make a few mangles to the jupyter pod manifest
-        # before using it for templating.  This will end up
-        # being used for the pod template for dask.
-        # Unset the name of the container, to let dask make the container
-        # names, otherwise you'll get an obtuse error from k8s about not
-        # being able to create the container.
-        dask_template.metadata.name = None
+            # Here we make a few mangles to the jupyter pod manifest
+            # before using it for templating.  This will end up
+            # being used for the pod template for dask.
+            # Unset the name of the container, to let dask make the container
+            # names, otherwise you'll get an obtuse error from k8s about not
+            # being able to create the container.
+            dask_template.metadata.name = None
 
-        # This is an argument to the provisioning script to signal it
-        # as a dask worker.
-        dask_template.spec.containers[0].env.append(
-            client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
-        )
+            # This is an argument to the provisioning script to signal it
+            # as a dask worker.
+            dask_template.spec.containers[0].env.append(
+                client.models.V1EnvVar(name="DASK_WORKER", value="TRUE")
+            )
 
-        # This will take the python model names and transform
-        # them to the names kubernetes expects, which to_dict
-        # alone doesn't.
-        dask_yaml_stream = StringIO()
-        self.yaml.dump(
-            api_client.sanitize_for_serialization(dask_template),
-            dask_yaml_stream,
-        )
-        return dask_yaml_stream.getvalue()
+            # This will take the python model names and transform
+            # them to the names kubernetes expects, which to_dict
+            # alone doesn't.
+            dask_yaml_stream = StringIO()
+            self.yaml.dump(
+                api.sanitize_for_serialization(dask_template),
+                dask_yaml_stream,
+            )
+            return dask_yaml_stream.getvalue()
 
     async def _build_template_values(
         self, spawner: KubeSpawner, options: SelectedOptions
@@ -259,28 +268,31 @@ class ResourceManager(LoggingConfigurable):
             `True` if the namespace has been deleted, `False` if it still
             exists
         """
-        api = shared_client("CoreV1Api")
-        try:
-            namespace = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(api.read_namespace, name),
-            )
-            if namespace.status.phase != "Terminating":
-                # Paranoia to ensure that we don't delete some random service
-                # namespace if something weird happens.
-                assert name.startswith("nublado2-")
-                self.log.info(f"Deleting namespace {name}")
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(api.delete_namespace, name),
+        await spawner._set_k8s_client_configuration()
+        async with client.ApiClient() as api:
+            v1 = client.CoreV1Api(api)
+            our_namespace = get_execution_namespace() or "default"
+            try:
+                namespace = await asyncio.wait_for(
+                    v1.read_namespace(name),
+                    timeout=spawner.k8s_api_request_timeout,
                 )
-            return False
-        except gen.TimeoutError:
-            return False
-        except ApiException as e:
-            if e.status == 404:
-                return True
-            raise
+                if namespace.status.phase != "Terminating":
+                    # Paranoia to ensure that we don't delete some random
+                    # service namespace if something weird happens.
+                    assert name.startswith(f"{our_namespace}-")
+                    self.log.info(f"Deleting namespace {name}")
+                    await asyncio.wait_for(
+                        v1.delete_namespace(name),
+                        timeout=spawner.k8s_api_request_timeout,
+                    )
+                return False
+            except asyncio.TimeoutError:
+                return False
+            except ApiException as e:
+                if e.status == 404:
+                    return True
+                raise
 
     async def _wait_for_service_account_token(
         self, spawner: KubeSpawner, name: str, namespace: str
@@ -293,28 +305,28 @@ class ResourceManager(LoggingConfigurable):
             `True` once the secret exists, `False` otherwise (so it can be
             called from ``exponential_backoff``)
         """
-        api = shared_client("CoreV1Api")
-        try:
-            service_account = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(
-                    api.read_namespaced_service_account, name, namespace
-                ),
-            )
-            if not service_account.secrets:
+        await spawner._set_k8s_client_configuration()
+        async with client.ApiClient() as api:
+            v1 = client.CoreV1Api(api)
+            try:
+                service_account = await asyncio.wait_for(
+                    v1.read_namespaced_service_account(name, namespace),
+                    timeout=spawner.k8s_api_request_timeout,
+                )
+                if not service_account.secrets:
+                    return False
+                secret_name = service_account.secrets[0].name
+                secret = await asyncio.wait_for(
+                    v1.read_namespaced_secret(secret_name, namespace),
+                    timeout=spawner.k8s_api_request_timeout,
+                )
+                return secret.metadata.name == secret_name
+            except asyncio.TimeoutError:
                 return False
-            secret_name = service_account.secrets[0].name
-            secret = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(
-                    api.read_namespaced_secret, secret_name, namespace
-                ),
-            )
-            return secret.metadata.name == secret_name
-        except gen.TimeoutError:
-            return False
-        except ApiException as e:
-            if e.status == 404:
-                self.log.debug("Waiting for secret for service account {name}")
-                return False
-            raise
+            except ApiException as e:
+                if e.status == 404:
+                    self.log.debug(
+                        "Waiting for secret for service account {name}"
+                    )
+                    return False
+                raise

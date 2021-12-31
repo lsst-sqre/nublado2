@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from aiohttp import ClientSession
 from jupyterhub.auth import Authenticator
 from jupyterhub.handlers import BaseHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 
-from nublado2.http import get_session
 from nublado2.nublado_config import NubladoConfig
 
 if TYPE_CHECKING:
@@ -43,16 +43,16 @@ async def _build_auth_info(headers: HTTPHeaders) -> Dict[str, Any]:
 
     # Retrieve the token metadata.
     api_url = url_path_join(config.base_url, "/auth/api/v1/user-info")
-    session = await get_session()
-    resp = await session.get(
-        api_url, headers={"Authorization": f"bearer {token}"}
-    )
-    if resp.status != 200:
-        raise web.HTTPError(500, "Cannot reach token analysis API")
-    try:
-        auth_state = await resp.json()
-    except Exception:
-        raise web.HTTPError(500, "Cannot get information for token")
+    async with ClientSession() as session:
+        resp = await session.get(
+            api_url, headers={"Authorization": f"bearer {token}"}
+        )
+        if resp.status != 200:
+            raise web.HTTPError(500, "Cannot reach token analysis API")
+        try:
+            auth_state = await resp.json()
+        except Exception:
+            raise web.HTTPError(500, "Cannot get information for token")
     if "username" not in auth_state or "uid" not in auth_state:
         raise web.HTTPError(403, "Request token is invalid")
 

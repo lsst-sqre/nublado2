@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:1.5.0 as base-image
+FROM jupyterhub/jupyterhub:latest as base-image
 
 # Update system packages
 COPY scripts/install-base-packages.sh .
@@ -11,8 +11,8 @@ COPY scripts/install-dependency-packages.sh .
 RUN ./install-dependency-packages.sh && rm install-dependency-packages.sh
 
 # Install the app's Python runtime dependencies
-COPY requirements/main.txt ./requirements.txt
-RUN pip install --quiet --no-cache-dir -r requirements.txt
+COPY requirements/main.in ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 FROM dependencies-image as runtime-image
 
@@ -28,6 +28,6 @@ RUN groupadd --gid 768 jovyan
 RUN useradd --create-home jovyan --uid 768 --gid 768
 WORKDIR /home/jovyan
 
-USER jovyan
+USER 768
 EXPOSE 8000
 EXPOSE 8081

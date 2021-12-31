@@ -81,7 +81,9 @@ aiohttp==3.8.1 \
     --hash=sha256:f5315a2eb0239185af1bddb1abf472d877fede3cc8d143c6cddad37678293237 \
     --hash=sha256:fa0ffcace9b3aa34d205d8130f7873fcfefcb6a4dd3dd705b0dab69af6712642 \
     --hash=sha256:fc5471e1a54de15ef71c1bc6ebe80d4dc681ea600e68bfd1cbce40427f0b7578
-    # via -r requirements/main.in
+    # via
+    #   -r requirements/main.in
+    #   kubernetes-asyncio
 aiosignal==1.2.0 \
     --hash=sha256:26e62109036cd181df6e6ad646f91f0dcfd05fe16d0cb924138ff2ab75d64e3a \
     --hash=sha256:78ed67db6c7b7ced4f98e495e572106d5c432a93e1ddd1bf475e1dc05f5b7df2
@@ -146,6 +148,7 @@ certifi==2021.10.8 \
     --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
     # via
     #   kubernetes
+    #   kubernetes-asyncio
     #   requests
 certipy==0.1.3 \
     --hash=sha256:695704b7716b033375c9a1324d0d30f27110a28895c40151a90ec07ff1032859 \
@@ -398,9 +401,9 @@ jupyter-telemetry==0.1.0 \
     --hash=sha256:1de3e423b23aa40ca4a4238d65c56dda544061ff5aedc3f7647220ed7e3b9589 \
     --hash=sha256:445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314
     # via jupyterhub
-jupyterhub==1.5.0 \
-    --hash=sha256:98e3f29671be6f530433d654a02d5a2d4c0ca637f7999e42aeb1c836f418bbec \
-    --hash=sha256:dc618f657c23ba46280e36257e50931806674ba0e9e6498afb091efc6226d69d
+jupyterhub==2.1.0 \
+    --hash=sha256:604f9d1abf40541a1d3f3f1fa6451fd706146f070340d0d4cc98e60bd4eaf5c6 \
+    --hash=sha256:8b07b5d328de9242d64ccb2f03613c0a7e380cd1a690c9b8bfb3343d81a1dc98
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
@@ -408,13 +411,16 @@ jupyterhub-idle-culler==1.2.1 \
     --hash=sha256:c84e45a51932a34bd95c08b3b6e8330fb0ee3391fa4d0f1ac0d4458a40492fd9 \
     --hash=sha256:d80822982d2590cb876d01849cee028943fdbdcc991c0f02fce45af3f40dd415
     # via -r requirements/main.in
-jupyterhub-kubespawner==2.0.0 \
-    --hash=sha256:55846d3e8a3daf35ab703144111388e08832c0f1552a6b598e52e213934768c3 \
-    --hash=sha256:57bb84b050851455e7a56e2667a358173b68ecb4b9c16f7d2bea9e0858dd3725
+# WARNING: pip install will require the following package to be hashed.
+# Consider using a hashable URL like https://github.com/jazzband/pip-tools/archive/SOMECOMMIT.zip
+jupyterhub-kubespawner @ git+https://github.com/lsst-sqre/kubespawner.git@tickets/DM-33044C
     # via -r requirements/main.in
 kubernetes==20.13.0 \
     --hash=sha256:7d32ea7f555813a141a0e912e7695d88f7213bb632a860ba79a963b43f7a6b18 \
     --hash=sha256:ce5e881c13dc56f21a243804f90bc3c507af93c380f505c00e392c823968e4de
+    # via -r requirements/main.in
+kubernetes-asyncio==19.15.0 \
+    --hash=sha256:281b24106f49d9954f24eccc628c99c2385085d6ff5fa4565f090754f2e1714a
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
@@ -564,6 +570,10 @@ oauthlib==3.1.1 \
     # via
     #   jupyterhub
     #   requests-oauthlib
+packaging==21.3 \
+    --hash=sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb \
+    --hash=sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522
+    # via jupyterhub
 pamela==1.0.0 \
     --hash=sha256:65c9389bef7d1bb0b168813b6be21964df32016923aac7515bdf05366acbab6c \
     --hash=sha256:b54be508a13bb3d983d117f7b069b31545003ae989791f467cf941376c807f20
@@ -636,6 +646,10 @@ pyopenssl==21.0.0 \
     --hash=sha256:5e2d8c5e46d0d865ae933bef5230090bdaf5506281e9eec60fa250ee80600cb3 \
     --hash=sha256:8935bd4920ab9abfebb07c41a4f58296407ed77f04bd1a92914044b848ba1ed6
     # via certipy
+pyparsing==3.0.7 \
+    --hash=sha256:18ee9022775d270c55187733956460083db60b37d0d0fb357445f3094eed3eea \
+    --hash=sha256:a6c06a88f252e6c322f65faf8f418b16213b51bdfaece0524c1c1bc30c63c484
+    # via packaging
 pyrsistent==0.18.1 \
     --hash=sha256:0e3e1fcc45199df76053026a51cc59ab2ea3fc7c094c6627e93b7b44cdae2c8c \
     --hash=sha256:1b34eedd6812bf4d33814fca1b66005805d3640ce53140ab8bbb1e2651b0d9bc \
@@ -666,6 +680,7 @@ python-dateutil==2.8.2 \
     #   jupyterhub
     #   jupyterhub-idle-culler
     #   kubernetes
+    #   kubernetes-asyncio
 python-json-logger==2.0.2 \
     --hash=sha256:202a4f29901a4b8002a6d1b958407eeb2dd1d83c18b18b816f5b64476dde9096 \
     --hash=sha256:99310d148f054e858cd5f4258794ed6777e7ad2c3fd7e1c1b527f1cba4d08420
@@ -711,6 +726,7 @@ pyyaml==6.0 \
     # via
     #   jupyterhub-kubespawner
     #   kubernetes
+    #   kubernetes-asyncio
 requests==2.27.1 \
     --hash=sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61 \
     --hash=sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d
@@ -765,6 +781,7 @@ six==1.16.0 \
     # via
     #   google-auth
     #   kubernetes
+    #   kubernetes-asyncio
     #   pyopenssl
     #   python-dateutil
 sqlalchemy==1.4.31 \
@@ -869,6 +886,7 @@ urllib3==1.26.8 \
     # via
     #   jupyterhub-kubespawner
     #   kubernetes
+    #   kubernetes-asyncio
     #   requests
 websocket-client==1.2.3 \
     --hash=sha256:1315816c0acc508997eb3ae03b9d3ff619c9d12d544c9a9b553704b1cc4f6af5 \

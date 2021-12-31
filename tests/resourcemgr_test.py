@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 from jupyterhub.user import User
-from kubernetes.client import (
+from kubernetes_asyncio.client import (
     ApiClient,
     V1Container,
     V1EnvVar,
