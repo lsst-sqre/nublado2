@@ -259,7 +259,10 @@ class ResourceManager(LoggingConfigurable):
             `True` if the namespace has been deleted, `False` if it still
             exists
         """
-        api = shared_client("CoreV1Api")
+        # Do not use a shared client: get a new one, because this call can
+        #  take a very long time and we hypothesize that other calls can
+        #  jam up behind it.
+        api = client.CoreV1Api()
         try:
             namespace = await gen.with_timeout(
                 timedelta(seconds=spawner.k8s_api_request_timeout),
