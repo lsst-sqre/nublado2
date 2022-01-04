@@ -16,6 +16,10 @@ psycopg2
 ruamel.yaml
 tornado
 
+# Introduces a renaming of V1EndpointPort to CoreV1EndpointPort that
+# breaks jupyterhub-kubespawner.
+kubernetes!=21.7.0
+
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
 # lockstep with the base image in Dockerfile.

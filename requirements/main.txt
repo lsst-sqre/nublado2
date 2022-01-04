@@ -425,10 +425,12 @@ jupyterhub-kubespawner==2.0.0 \
     --hash=sha256:55846d3e8a3daf35ab703144111388e08832c0f1552a6b598e52e213934768c3 \
     --hash=sha256:57bb84b050851455e7a56e2667a358173b68ecb4b9c16f7d2bea9e0858dd3725
     # via -r requirements/main.in
-kubernetes==21.7.0 \
-    --hash=sha256:044c20253f8577491a87af8f9edea1f929ed6d62ce306376a6cb8aed24e572c5 \
-    --hash=sha256:c9849afc2eafdce60efa210049ee7a94e7ef6cf3a7afa14a69b3bf0447825977
-    # via jupyterhub-kubespawner
+kubernetes==20.13.0 \
+    --hash=sha256:7d32ea7f555813a141a0e912e7695d88f7213bb632a860ba79a963b43f7a6b18 \
+    --hash=sha256:ce5e881c13dc56f21a243804f90bc3c507af93c380f505c00e392c823968e4de
+    # via
+    #   -r requirements/main.in
+    #   jupyterhub-kubespawner
 mako==1.1.6 \
     --hash=sha256:4e9e345a41924a954251b95b4b28e14a301145b544901332e658907a7464b6b2 \
     --hash=sha256:afaf8e515d075b22fad7d7b8b30e4a1c90624ff2f3733a06ec125f5a5f043a57
