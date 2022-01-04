@@ -12,6 +12,7 @@ inflect
 jinja2
 jupyterhub-idle-culler
 jupyterhub-kubespawner
+kubernetes<21.7  # V1EndpointPort renamed to CoreV1EndpointPort in 21.7.0
 psycopg2
 ruamel.yaml
 tornado
