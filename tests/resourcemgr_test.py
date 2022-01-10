@@ -9,8 +9,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 from jupyterhub.user import User
+from kubernetes_asyncio import client
 from kubernetes_asyncio.client import (
-    ApiClient,
     V1Container,
     V1EnvVar,
     V1ObjectMeta,
@@ -56,7 +56,7 @@ USER_RESOURCES_TEMPLATE = """
 
 
 class KubernetesApiMock:
-    """Mocks the bits of the Kubernetes API that we use.
+    """Mocks the bits of the Kubernetes_asyncio API that we use.
 
     This simulates both the CoreV1Api and the CustomObjectsApi (but only
     portions of each).
@@ -65,14 +65,16 @@ class KubernetesApiMock:
     def __init__(self) -> None:
         self.objects: List[Dict[str, Any]] = []
         self.custom: List[Dict[str, Any]] = []
-        self.api_client = ApiClient()
 
     async def create_object(self, kind: str, body: Any) -> bool:
-        body_as_dict = self.api_client.sanitize_for_serialization(body)
-        self.objects.append(body_as_dict)
-        return True
+        # FIXME api context manager needs mocking...but then it would need
+        #  to still serialize.
+        async with client.ApiClient() as api:
+            body_as_dict = api.sanitize_for_serialization(body)
+            self.objects.append(body_as_dict)
+            return True
 
-    def create_namespaced_custom_object(
+    async def create_namespaced_custom_object(
         self,
         group: str,
         version: str,
@@ -86,9 +88,6 @@ class KubernetesApiMock:
         assert crd_info.plural == plural
         assert body["metadata"]["namespace"] == namespace
         self.custom.append(body)
-
-    def shared_client_mock(self, typ: str) -> Any:
-        return self.api_client if typ == "ApiClient" else self
 
 
 @pytest.fixture(autouse=True)
@@ -121,15 +120,11 @@ def kubernetes_api_mock() -> Iterator[KubernetesApiMock]:
     mock_api = KubernetesApiMock()
     with patch("nublado2.resourcemgr.create_from_dict") as create_mock:
         create_mock.side_effect = lambda _, r: mock_api.objects.append(r)
-        with patch("nublado2.resourcemgr.shared_client") as client_mock:
-            client_mock.side_effect = mock_api.shared_client_mock
-            yield mock_api
+        yield mock_api
 
 
-async def mock_asynchronize(
-    func: Callable[..., Any], *args: Any, **kwargs: Any
-) -> Any:
-    return func(*args, **kwargs)
+async def fake_configure_spawner(self) -> None:
+    self._k8s_client_configured = True
 
 
 @pytest.mark.asyncio
@@ -139,6 +134,7 @@ async def test_create_kubernetes_resources(
     spawner = Mock(spec=KubeSpawner)
     spawner.k8s_api_request_timeout = 3
     spawner.k8s_api_request_retry_timeout = 30
+
     spawner.namespace = "nublado2-someuser"
     spawner.extra_annotations = {
         "argocd.argoproj.io/compare-options": "IgnoreExtraneous",
@@ -148,7 +144,6 @@ async def test_create_kubernetes_resources(
         "hub.jupyter.org/network-access-hub": "true",
         "argocd.argoproj.io/instance": "nublado-users",
     }
-    spawner.asynchronize = mock_asynchronize
     spawner._make_create_resource_request = kubernetes_api_mock.create_object
     spawner.hub = Mock()
     spawner.hub.base_url = "/nb/hub/"
