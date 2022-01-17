@@ -80,9 +80,9 @@ aiohttp==3.8.1 \
     # via
     #   -c requirements/main.txt
     #   aioresponses
-aioresponses==0.7.2 \
-    --hash=sha256:2f8ff624543066eb465b0238de68d29231e8488f41dc4b5a9dae190982cdae50 \
-    --hash=sha256:82e495d118b74896aa5b4d47e17effb5e2cc783e510ae395ceade5e87cabe89a
+aioresponses==0.7.3 \
+    --hash=sha256:2c64ed5710ee8cb4e958c569184dad12f4c9cd5939135cb38f88c6a8261cceb3 \
+    --hash=sha256:7b1897169062c92fa87d6ecc503ac566ac87fbfacb2504f8ca81c8035a2eb068
     # via -r requirements/dev.in
 aiosignal==1.2.0 \
     --hash=sha256:26e62109036cd181df6e6ad646f91f0dcfd05fe16d0cb924138ff2ab75d64e3a \
@@ -247,9 +247,9 @@ frozenlist==1.2.0 \
     #   -c requirements/main.txt
     #   aiohttp
     #   aiosignal
-identify==2.4.2 \
-    --hash=sha256:67c1e66225870dce721228176637a8ef965e8dd58450bcc7592249d0dfc4da6c \
-    --hash=sha256:93e8ec965e888f2212aa5c24b2b662f4832c39acb1d7196a70ea45acb626a05e
+identify==2.4.4 \
+    --hash=sha256:6b4b5031f69c48bf93a646b90de9b381c6b5f560df4cbe0ed3cf7650ae741e4d \
+    --hash=sha256:aa68609c7454dbcaae60a01ff6b8df1de9b39fe6e50b1f6107ec81dcda624aa6
     # via pre-commit
 idna==3.3 \
     --hash=sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff \
@@ -398,9 +398,9 @@ pytest==6.2.5 \
     # via
     #   -r requirements/dev.in
     #   pytest-asyncio
-pytest-asyncio==0.16.0 \
-    --hash=sha256:5f2a21273c47b331ae6aa5b36087047b4899e40f03f18397c0e65fa5cca54e9b \
-    --hash=sha256:7496c5977ce88c34379df64a66459fe395cd05543f0a2f837016e7144391fcfb
+pytest-asyncio==0.17.1 \
+    --hash=sha256:4b3f94b558a035edc5e14d66500ed9fbcc387ea7c3d561a0492006b9f938389e \
+    --hash=sha256:f97d63cbe7b7a9eec30d1e289688201bd8e91cd1a854f6be4937b0bc4d2dff61
     # via -r requirements/dev.in
 pyyaml==6.0 \
     --hash=sha256:0283c35a6a9fbf047493e3a0ce8d79ef5030852c51e9d911a27badfde0605293 \
@@ -505,7 +505,9 @@ tornado==6.1 \
 typing-extensions==4.0.1 \
     --hash=sha256:4ca091dea149f945ec56afb48dae714f21e8692ef22a395223bcd328961b6a0e \
     --hash=sha256:7f001e5ac290a0c0401508864c7ec868be4e701886d5b573a9528ed3973d9d3b
-    # via mypy
+    # via
+    #   mypy
+    #   pytest-asyncio
 virtualenv==20.13.0 \
     --hash=sha256:339f16c4a86b44240ba7223d0f93a7887c3ca04b5f9c8129da7958447d079b09 \
     --hash=sha256:d8458cf8d59d0ea495ad9b34c2599487f8a7772d796f9910858376d1600dd2dd
