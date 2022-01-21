@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import asyncio
-import sys
-from typing import TYPE_CHECKING
+import json
+from typing import Any, AsyncGenerator, Callable, Dict, List, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -13,9 +12,6 @@ from jupyterhub.spawner import Spawner
 from jupyterhub.user import User
 
 from nublado2.resourcemgr import ResourceManager
-
-if TYPE_CHECKING:
-    from typing import Any, AsyncGenerator, Callable, Dict, List, Union
 
 
 @pytest.fixture(autouse=True)
@@ -35,28 +31,30 @@ def build_handler(
     username: str,
     uid: int,
     groups: List[Dict[str, Union[str, int]]],
-    *,
-    count: int,
 ) -> Callable[..., CallbackResult]:
     probe = 0
 
     def handler(url: str, **kwargs: Any) -> CallbackResult:
-        if str(url) == "https://data.example.com/moneypenny/commission":
+        nonlocal probe
+        user_url = f"https://data.example.com/moneypenny/users/{username}"
+        if str(url) == "https://data.example.com/moneypenny/users":
             assert kwargs["json"] == {
                 "username": username,
                 "uid": uid,
                 "groups": groups,
             }
-            return CallbackResult(status=202)
-        elif str(url) == f"https://data.example.com/moneypenny/{username}":
-            nonlocal probe
+            return CallbackResult(status=303, headers={"Location": user_url})
+        elif str(url) == user_url:
+            result = {
+                "username": username,
+                "status": "commissioning" if probe == 0 else "active",
+                "uid": uid,
+                "groups": groups,
+            }
+            return CallbackResult(status=200, body=json.dumps(result))
+        elif str(url) == f"{user_url}/wait":
             probe += 1
-            if probe == count:
-                return CallbackResult(status=200)
-            elif probe > count:
-                return CallbackResult(status=404)
-            else:
-                return CallbackResult(status=202)
+            return CallbackResult(status=303, headers={"Location": user_url})
         else:
             assert False, f"unknown URL {str(url)}"
 
@@ -73,20 +71,16 @@ async def test_provision() -> None:
         "uid": 1234,
         "groups": [{"name": "foo", "id": 1234}],
     }
+    spawner.user.get_auth_state.return_value = auth_state
 
-    # AsyncMock was introduced in Python 3.8, so sadly we can't use it yet.
-    if sys.version_info < (3, 8):
-        spawner.user.get_auth_state.return_value = asyncio.Future()
-        spawner.user.get_auth_state.return_value.set_result(auth_state)
-    else:
-        spawner.user.get_auth_state.return_value = auth_state
-
-    commission_url = "https://data.example.com/moneypenny/commission"
-    status_url = "https://data.example.com/moneypenny/someuser"
+    commission_url = "https://data.example.com/moneypenny/users"
+    status_url = "https://data.example.com/moneypenny/users/someuser"
+    wait_url = "https://data.example.com/moneypenny/users/someuser/wait"
     with aioresponses() as m:
         handler = build_handler(
-            "someuser", 1234, [{"name": "foo", "id": 1234}], count=2
+            "someuser", 1234, [{"name": "foo", "id": 1234}]
         )
         m.post(commission_url, callback=handler)
         m.get(status_url, callback=handler, repeat=True)
+        m.get(wait_url, callback=handler)
         await resource_manager.provisioner.provision_homedir(spawner)
