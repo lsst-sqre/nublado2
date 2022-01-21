@@ -13,7 +13,7 @@ jinja2
 jupyterhub-idle-culler
 #git+https://github.com/lsst-sqre/kubernetes_asyncio.git@tickets/DM-33092
 kubernetes_asyncio
-git+https://github.com/lsst-sqre/kubespawner.git@tickets/DM-33044C
+git+https://github.com/lsst-sqre/kubespawner.git@tickets/DM-33044D
 psycopg2
 ruamel.yaml
 tornado
@@ -26,10 +26,13 @@ kubernetes!=21.7.0
 # upgraded without our explicit approval, and it should be upgraded in
 # lockstep with the base image in Dockerfile.
 #jupyterhub==1.5.0
+#
+# I mean not right now, while I'm iterating on it.
+#
 jupyterhub
 
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.
 importlib-metadata
 importlib-resources
-#MARK 1182DE7B-2536-4473-9873-443D8FE86171
+#MARK 658BA35C-FF47-4C16-9F06-C91A55758B98

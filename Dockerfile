@@ -1,3 +1,4 @@
+# Using latest while I develop
 FROM jupyterhub/jupyterhub:latest as base-image
 
 # Update system packages
