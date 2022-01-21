@@ -7,6 +7,7 @@ from typing import Any, AsyncGenerator, Callable, Dict, List, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+import pytest_asyncio
 from aioresponses import CallbackResult, aioresponses
 from jupyterhub.spawner import Spawner
 from jupyterhub.user import User
@@ -14,7 +15,7 @@ from jupyterhub.user import User
 from nublado2.resourcemgr import ResourceManager
 
 
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def config_mock() -> AsyncGenerator:
     """Use a mock NubladoConfig object."""
     with patch("nublado2.resourcemgr.NubladoConfig") as mock:
