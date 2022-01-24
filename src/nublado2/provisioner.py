@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from urllib.parse import urljoin
 
-from aiohttp import ClientTimeout
+from aiohttp import ClientSession, ClientTimeout
 from jupyterhub.spawner import Spawner
 from tornado import web
 from traitlets.config import LoggingConfigurable
@@ -41,13 +41,13 @@ class Provisioner(LoggingConfigurable):
             "groups": auth_state["groups"],
         }
         provision_url = urljoin(base_url, "moneypenny/users")
-        session = await get_session()
-        self.log.debug(f"Posting dossier {dossier} to {provision_url}")
-        r = await session.post(
-            provision_url,
-            json=dossier,
-            headers={"Authorization": f"Bearer {token}"},
-        )
+        async with ClientSession() as session:
+            self.log.debug(f"Posting dossier {dossier} to {provision_url}")
+            r = await session.post(
+                provision_url,
+                json=dossier,
+                headers={"Authorization": f"Bearer {token}"},
+            )
         self.log.debug(f"POST got {r.status}")
         r.raise_for_status()
 
@@ -61,13 +61,12 @@ class Provisioner(LoggingConfigurable):
         base_url = self.nublado_config.base_url
         status_url = urljoin(base_url, f"moneypenny/users/{username}/wait")
         token = self.nublado_config.gafaelfawr_token
-        session = await get_session()
-
-        r = await session.get(
-            status_url,
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=ClientTimeout(total=300),
-        )
+        async with ClientSession() as session:
+            r = await session.get(
+                status_url,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=ClientTimeout(total=300),
+            )
         self.log.debug(f"Moneypenny {status_url} status: {r.status}")
         if r.status == 200:
             data = await r.json()
