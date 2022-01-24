@@ -7,10 +7,11 @@ This tests the logic that's sufficiently separable to run in a test harness.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any, AsyncGenerator, Callable, Dict
 from unittest.mock import MagicMock, patch
 
 import pytest
+import pytest_asyncio
 from aioresponses import CallbackResult, aioresponses
 from tornado import web
 from tornado.httputil import HTTPHeaders
@@ -21,11 +22,8 @@ from nublado2.auth import (
     _build_auth_info,
 )
 
-if TYPE_CHECKING:
-    from typing import Any, AsyncGenerator, Callable, Dict
 
-
-@pytest.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True)
 async def config_mock() -> AsyncGenerator:
     """Use a mock NubladoConfig object."""
     with patch("nublado2.auth.NubladoConfig") as mock:

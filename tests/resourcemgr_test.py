@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import TYPE_CHECKING
+from typing import Any, Callable, Dict, Iterator, List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -24,9 +24,6 @@ from nublado2.imageinfo import ImageInfo
 from nublado2.nublado_config import NubladoConfig
 from nublado2.resourcemgr import ResourceManager
 from nublado2.selectedoptions import SelectedOptions
-
-if TYPE_CHECKING:
-    from typing import Any, Callable, Dict, Iterator, List
 
 # Mock user resources template to test the template engine.
 USER_RESOURCES_TEMPLATE = """

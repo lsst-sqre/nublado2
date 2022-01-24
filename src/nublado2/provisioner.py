@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
-from jupyterhub.utils import exponential_backoff
+from aiohttp import ClientTimeout
+from jupyterhub.spawner import Spawner
+from tornado import web
 from traitlets.config import LoggingConfigurable
 
 from nublado2.http import get_session
 from nublado2.nublado_config import NubladoConfig
-
-if TYPE_CHECKING:
-    from jupyterhub.spawner import Spawner
 
 __all__ = ["Provisioner"]
 
@@ -42,7 +40,7 @@ class Provisioner(LoggingConfigurable):
             "uid": int(auth_state["uid"]),
             "groups": auth_state["groups"],
         }
-        provision_url = urljoin(base_url, "moneypenny/commission")
+        provision_url = urljoin(base_url, "moneypenny/users")
         session = await get_session()
         self.log.debug(f"Posting dossier {dossier} to {provision_url}")
         r = await session.post(
@@ -53,36 +51,28 @@ class Provisioner(LoggingConfigurable):
         self.log.debug(f"POST got {r.status}")
         r.raise_for_status()
 
-        # Use a wrapper to log the number of requests.
-        count = 0
-
-        async def _wait_wrapper() -> bool:
-            nonlocal count
-            count += 1
-            self.log.debug(f"Checking Moneypenny status #{count}")
+        # Wait until the work has finished.
+        data = await r.json()
+        if data["status"] != "active":
             return await self._wait_for_provision(spawner.user.name)
 
-        # Run with exponential backoff and a maximum timeout of 5m.
-        await exponential_backoff(
-            _wait_wrapper,
-            fail_message="Moneypenny did not complete",
-            timeout=300,
-        )
-
-    async def _wait_for_provision(self, username: str) -> bool:
+    async def _wait_for_provision(self, username: str) -> None:
         """Wait for provisioning to complete."""
         base_url = self.nublado_config.base_url
-        status_url = urljoin(base_url, f"moneypenny/{username}")
+        status_url = urljoin(base_url, f"moneypenny/users/{username}/wait")
         token = self.nublado_config.gafaelfawr_token
         session = await get_session()
 
         r = await session.get(
-            status_url, headers={"Authorization": f"Bearer {token}"}
+            status_url,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=ClientTimeout(total=300),
         )
         self.log.debug(f"Moneypenny {status_url} status: {r.status}")
-
-        if r.status == 200 or r.status == 404:
-            return True
-        if r.status != 202:
+        if r.status == 200:
+            data = await r.json()
+            if data["status"] != "active":
+                status = data["status"]
+                raise web.HTTPError(500, f"Moneypenny reports status {status}")
+        else:
             r.raise_for_status()
-        return False
