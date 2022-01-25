@@ -20,7 +20,7 @@ tornado
 
 # Introduces a renaming of V1EndpointPort to CoreV1EndpointPort that
 # breaks jupyterhub-kubespawner.
-kubernetes!=21.7.0
+#kubernetes!=21.7.0
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
@@ -35,4 +35,4 @@ jupyterhub
 # Python 3.8 support is dropped so that we have consistent dependencies.
 importlib-metadata
 importlib-resources
-#MARK 658BA35C-FF47-4C16-9F06-C91A55758B98
+#MARK 82813566-4543-42E4-A7CE-8196F4E63451

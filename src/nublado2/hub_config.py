@@ -22,6 +22,8 @@ class HubConfig(LoggingConfigurable):
         c.JupyterHub.hub_connect_url = self._get_hub_connect_url()
         # Turn off concurrent spawn limit
         c.JupyterHub.concurrent_spawn_limit = 0
+        # Increase timeout for stop (for namespace deletion)
+        c.JupyterHub.slow_stop_timeout = 30
 
         # Setup hooks
         hooks = NubladoHooks()

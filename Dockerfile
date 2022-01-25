@@ -12,6 +12,7 @@ COPY scripts/install-dependency-packages.sh .
 RUN ./install-dependency-packages.sh && rm install-dependency-packages.sh
 
 # Install the app's Python runtime dependencies
+# When we're done iterating, we can freeze the requirements, but not yet.
 COPY requirements/main.in ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
