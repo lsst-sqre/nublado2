@@ -1,4 +1,9 @@
+"""Spawner option form handling."""
+
+from __future__ import annotations
+
 from typing import List, Optional, Tuple
+from urllib.parse import urljoin
 
 from jinja2 import Template
 from jupyterhub.spawner import Spawner
@@ -100,19 +105,20 @@ function selectDropdown() {
 
 
 class NubladoOptions(LoggingConfigurable):
-    async def show_options_form(self, spawner: Spawner) -> str:
-        nc = NubladoConfig()
+    def __init__(self) -> None:
+        self.nublado_config = NubladoConfig()
 
-        (cached_images, all_images) = await self._get_images_from_url(
-            nc.images_url
-        )
-        cached_images.extend(nc.pinned_images)
+    async def show_options_form(self, spawner: Spawner) -> str:
+        base_url = self.nublado_config.base_url
+        url = urljoin(base_url, "cachemachine/jupyter/available")
+        (cached_images, all_images) = await self._get_images_from_url(url)
+        cached_images.extend(self.nublado_config.pinned_images)
 
         return options_template.render(
             dropdown_sentinel=DROPDOWN_SENTINEL_VALUE,
             cached_images=cached_images,
             all_images=all_images,
-            sizes=nc.sizes.values(),
+            sizes=self.nublado_config.sizes.values(),
         )
 
     async def _get_images_from_url(

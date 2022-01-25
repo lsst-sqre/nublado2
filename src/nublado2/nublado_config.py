@@ -43,13 +43,6 @@ class NubladoConfig:
             return None
 
     @property
-    def images_url(self) -> str:
-        """URL to fetch list of images to show in options form.
-
-        Generally, this is a link to the cachemachine service."""
-        return self._config["images_url"]
-
-    @property
     def lab_environment(self) -> Dict[str, str]:
         """Environment variable settings for the lab (possibly templates)."""
         return dict(self._config.get("lab_environment", {}))
