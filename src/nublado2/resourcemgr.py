@@ -60,6 +60,9 @@ class ResourceManager(LoggingConfigurable):
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         """Create the user resources for this spawning session."""
+        # Amusingly, neither start() nor poll() as happened yet in the
+        #  spawner, and we need its api client initialized.
+        await spawner._initialize_reflectors_and_clients()
         await self.provisioner.provision_homedir(spawner)
         try:
             await exponential_backoff(
@@ -112,6 +115,10 @@ class ResourceManager(LoggingConfigurable):
             ),
             data=environment,
         )
+        #
+        # This private spawner method is actually the first time we call
+        #  a method on the spawner
+        #
         await exponential_backoff(
             partial(spawner._make_create_resource_request, "config_map", body),
             f"Could not create ConfigMap {spawner.namespace}/lab-environment",
@@ -121,7 +128,6 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
-        await spawner._set_k8s_client_configuration()
         async with client.ApiClient() as api:
             custom_api = client.CustomObjectsApi(api)
             template_values = await self._build_template_values(
@@ -195,7 +201,6 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
-        await spawner._set_k8s_client_configuration()
         async with client.ApiClient() as api:
             dask_template = await spawner.get_pod_manifest()
 
@@ -268,7 +273,6 @@ class ResourceManager(LoggingConfigurable):
             `True` if the namespace has been deleted, `False` if it still
             exists
         """
-        await spawner._set_k8s_client_configuration()
         async with client.ApiClient() as api:
             v1 = client.CoreV1Api(api)
             our_namespace = get_execution_namespace() or "default"
@@ -305,7 +309,6 @@ class ResourceManager(LoggingConfigurable):
             `True` once the secret exists, `False` otherwise (so it can be
             called from ``exponential_backoff``)
         """
-        await spawner._set_k8s_client_configuration()
         async with client.ApiClient() as api:
             v1 = client.CoreV1Api(api)
             try:
