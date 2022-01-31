@@ -63,7 +63,6 @@ class ResourceManager(LoggingConfigurable):
                 partial(
                     self._wait_for_namespace_deletion,
                     spawner,
-                    spawner.namespace,
                 ),
                 f"Namespace {spawner.namespace} still being deleted",
                 timeout=spawner.k8s_api_request_retry_timeout,
@@ -84,7 +83,7 @@ class ResourceManager(LoggingConfigurable):
         """
         # It's a post-stop hook, so the spawner API client will exist.
         await exponential_backoff(
-            partial(self._wait_for_namespace_deletion, spawner, namespace),
+            partial(self._wait_for_namespace_deletion, spawner),
             f"Namespace {namespace} still being deleted",
             timeout=spawner.k8s_api_request_retry_timeout,
         )
@@ -246,9 +245,7 @@ class ResourceManager(LoggingConfigurable):
         self.log.debug(f"Template values={template_values}")
         return template_values
 
-    async def _wait_for_namespace_deletion(
-        self, spawner: KubeSpawner, name: str
-    ) -> bool:
+    async def _wait_for_namespace_deletion(self, spawner: KubeSpawner) -> bool:
         """Waits for the user's namespace to be deleted.
 
         If the namespace exists but has not been marked for deletion, try to
@@ -264,16 +261,19 @@ class ResourceManager(LoggingConfigurable):
         """
         api = shared_client("CoreV1Api")
         try:
+            ns_name = spawner.namespace
+            # Note that this is not safe to run if you aren't using
+            # user namespaces.  Check that:
+            assert spawner.enable_user_namespaces
             namespace = await asyncio.wait_for(
-                api.read_namespace(name), spawner.k8s_api_request_timeout
+                api.read_namespace(ns_name),
+                spawner.k8s_api_request_timeout,
             )
             if namespace.status.phase != "Terminating":
-                # Paranoia to ensure that we don't delete some random service
-                # namespace if something weird happens.
-                assert name.startswith("nublado2-")
-                self.log.info(f"Deleting namespace {name}")
+                self.log.info(f"Deleting namespace {ns_name}")
                 await asyncio.wait_for(
-                    api.delete_namespace(name), spawner.k8s_api_request_timeout
+                    api.delete_namespace(ns_name),
+                    spawner.k8s_api_request_timeout,
                 )
             return False
         except asyncio.TimeoutError:
