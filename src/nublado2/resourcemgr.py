@@ -265,6 +265,19 @@ class ResourceManager(LoggingConfigurable):
             # Note that this is not safe to run if you aren't using
             # user namespaces.  Check that:
             assert spawner.enable_user_namespaces
+            # Let's do a further check for paranoia.  We will assume that
+            # a user namespace will be of the form <hub-namespace>-<something>
+            # This is true for Rubin user namespaces, but might not be
+            # universally.
+            #
+            # If opening the ns_path file fails, it means we are not running
+            # in a namespace with service accounts enabled, in which case
+            # we definitely want to let the exception crash the process.
+            ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+            with open(ns_path) as f:
+                hub_ns = f.read().strip()
+            assert ns_name.startswith(f"{hub_ns}-")
+
             namespace = await asyncio.wait_for(
                 api.read_namespace(ns_name),
                 spawner.k8s_api_request_timeout,
