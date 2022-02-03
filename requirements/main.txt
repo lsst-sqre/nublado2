@@ -231,9 +231,9 @@ cryptography==36.0.1 \
     --hash=sha256:ebc15b1c22e55c4d5566e3ca4db8689470a0ca2babef8e3a9ee057a8b82ce4b1 \
     --hash=sha256:ec63da4e7e4a5f924b90af42eddf20b698a70e58d86a72d943857c4c6045b3ee
     # via pyopenssl
-entrypoints==0.3 \
-    --hash=sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19 \
-    --hash=sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451
+entrypoints==0.4 \
+    --hash=sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4 \
+    --hash=sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f
     # via jupyterhub
 escapism==1.0.1 \
     --hash=sha256:73256bdfb4f22230f0428fc6efecee61cdc4fad531b6f98b849cb9c80711e4ec \
@@ -402,8 +402,8 @@ jupyterhub-idle-culler==1.2.1 \
     --hash=sha256:c84e45a51932a34bd95c08b3b6e8330fb0ee3391fa4d0f1ac0d4458a40492fd9 \
     --hash=sha256:d80822982d2590cb876d01849cee028943fdbdcc991c0f02fce45af3f40dd415
     # via -r requirements/main.in
-kubernetes-asyncio==19.15.0 \
-    --hash=sha256:281b24106f49d9954f24eccc628c99c2385085d6ff5fa4565f090754f2e1714a
+kubernetes-asyncio==19.15.1 \
+    --hash=sha256:39f01eb267d1fec52e2f37f9fbe6b63b095011a64ca6de53988daf307d319f28
     # via
     #   -r requirements/main.in
     #   rubin-kubespawner
@@ -733,9 +733,9 @@ ruamel.yaml.clib==0.2.6 \
     --hash=sha256:dc6a613d6c74eef5a14a214d433d06291526145431c3b964f5e16529b1842bed \
     --hash=sha256:de9c6b8a1ba52919ae919f3ae96abb72b994dd0350226e28f3686cb4f142165c
     # via ruamel.yaml
-rubin-kubespawner==2.0.1.dev1 \
-    --hash=sha256:ab4ba6bd25f251399fe4c863b3809d5b75f3056e9f87b0a7bf5134384c14f333 \
-    --hash=sha256:ad3fa1bdad769ef95ad9223368e9049145c5cd1a358884f0b98d894043aacfef
+rubin-kubespawner==2.0.1.dev2 \
+    --hash=sha256:920f4bed6473b56a2c868610c0dd38046a4cd5d27279b8cf41366ee04f9d4589 \
+    --hash=sha256:d9abba14f41d01b30406ab53e65e19047e8e7eab6de7c24be5ea60ed86799108
     # via -r requirements/main.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
