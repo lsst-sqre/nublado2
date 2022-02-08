@@ -700,13 +700,13 @@ requests==2.27.1 \
     --hash=sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61 \
     --hash=sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d
     # via jupyterhub
-ruamel.yaml==0.17.20 \
+ruamel-yaml==0.17.20 \
     --hash=sha256:4b8a33c1efb2b443a93fcaafcfa4d2e445f8e8c29c528d9f5cdafb7cc9e4004c \
     --hash=sha256:810eef9c46523a3f77479c66267a4708255ebe806a2d540078408c2227f011af
     # via
     #   -r requirements/main.in
     #   jupyter-telemetry
-ruamel.yaml.clib==0.2.6 \
+ruamel-yaml-clib==0.2.6 \
     --hash=sha256:0847201b767447fc33b9c235780d3aa90357d20dd6108b92be544427bea197dd \
     --hash=sha256:1070ba9dd7f9370d0513d649420c3b362ac2d687fe78c6e888f5b12bf8bc7bee \
     --hash=sha256:1866cf2c284a03b9524a5cc00daca56d80057c5ce3cdc86a52020f4c720856f0 \
@@ -732,10 +732,10 @@ ruamel.yaml.clib==0.2.6 \
     --hash=sha256:d67f273097c368265a7b81e152e07fb90ed395df6e552b9fa858c6d2c9f42502 \
     --hash=sha256:dc6a613d6c74eef5a14a214d433d06291526145431c3b964f5e16529b1842bed \
     --hash=sha256:de9c6b8a1ba52919ae919f3ae96abb72b994dd0350226e28f3686cb4f142165c
-    # via ruamel.yaml
-rubin-kubespawner==2.0.1.dev2 \
-    --hash=sha256:920f4bed6473b56a2c868610c0dd38046a4cd5d27279b8cf41366ee04f9d4589 \
-    --hash=sha256:d9abba14f41d01b30406ab53e65e19047e8e7eab6de7c24be5ea60ed86799108
+    # via ruamel-yaml
+rubin-kubespawner==2.0.1.dev5 \
+    --hash=sha256:201076932e69dad022311f81fce648da1682b4d5baffcca966c56fff5dc84187 \
+    --hash=sha256:4df98fa5ce2b395095b33ae11dd86f2cd6930f1d190647571dc2c05b2a4cf95d
     # via -r requirements/main.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
