@@ -114,6 +114,7 @@ class NubladoOptions(LoggingConfigurable):
         # 'desired'.  Where we have image streaming, 'desired' is fine and
         # will improve user experience during autoscales.
         url = urljoin(base_url, "cachemachine/jupyter/desired")
+        # url = urljoin(base_url, "cachemachine/jupyter/available")
         (cached_images, all_images) = await self._get_images_from_url(url)
         cached_images.extend(self.nublado_config.pinned_images)
 
