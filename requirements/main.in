@@ -11,19 +11,19 @@ cchardet
 inflect
 jinja2
 jupyterhub-idle-culler
-jupyterhub-kubespawner
 psycopg2
 ruamel.yaml
 tornado
 
-# Introduces a renaming of V1EndpointPort to CoreV1EndpointPort that
-# breaks jupyterhub-kubespawner.
-kubernetes!=21.7.0
+kubernetes-asyncio
+
+# Until changes are accepted upstream:
+rubin-kubespawner
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
 # lockstep with the base image in Dockerfile.
-jupyterhub==1.5.0
+jupyterhub==2.1.1
 
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.

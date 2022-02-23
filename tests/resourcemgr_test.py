@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from typing import Any, Callable, Dict, Iterator, List
+from typing import Any, Dict, Iterator, List
 from unittest.mock import Mock, patch
 
 import pytest
 from jupyterhub.user import User
-from kubernetes.client import (
+from kubernetes_asyncio.client import (
     ApiClient,
     V1Container,
     V1EnvVar,
@@ -72,7 +72,7 @@ class KubernetesApiMock:
         self.objects.append(body_as_dict)
         return True
 
-    def create_namespaced_custom_object(
+    async def create_namespaced_custom_object(
         self,
         group: str,
         version: str,
@@ -126,12 +126,6 @@ def kubernetes_api_mock() -> Iterator[KubernetesApiMock]:
             yield mock_api
 
 
-async def mock_asynchronize(
-    func: Callable[..., Any], *args: Any, **kwargs: Any
-) -> Any:
-    return func(*args, **kwargs)
-
-
 @pytest.mark.asyncio
 async def test_create_kubernetes_resources(
     kubernetes_api_mock: KubernetesApiMock,
@@ -148,7 +142,6 @@ async def test_create_kubernetes_resources(
         "hub.jupyter.org/network-access-hub": "true",
         "argocd.argoproj.io/instance": "nublado-users",
     }
-    spawner.asynchronize = mock_asynchronize
     spawner._make_create_resource_request = kubernetes_api_mock.create_object
     spawner.hub = Mock()
     spawner.hub.base_url = "/nb/hub/"

@@ -31,6 +31,8 @@ class HubConfig(LoggingConfigurable):
         c.Spawner.options_from_form = hooks.options_from_form
         # Turn off restart after n consecutive failures
         c.Spawner.consecutive_failure_limit = 0
+        # Use JupyterLab by default
+        c.Spawner.default_url = "/lab"
 
         c.KubeSpawner.enable_user_namespaces = True
 

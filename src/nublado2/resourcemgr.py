@@ -1,20 +1,18 @@
 """Spawn and delete Kubernetes resources other than the pod."""
-
 from __future__ import annotations
 
-from datetime import timedelta
+import asyncio
 from functools import partial
 from io import StringIO
 from typing import TYPE_CHECKING
 
 from jinja2 import Template
 from jupyterhub.utils import exponential_backoff
-from kubernetes import client
-from kubernetes.client.rest import ApiException
-from kubernetes.utils import create_from_dict
+from kubernetes_asyncio import client
+from kubernetes_asyncio.client.rest import ApiException
+from kubernetes_asyncio.utils import create_from_dict
 from kubespawner.clients import shared_client
 from ruamel.yaml import YAML
-from tornado import gen
 from traitlets.config import LoggingConfigurable
 
 from nublado2.crdparser import CRDParser
@@ -47,18 +45,24 @@ class ResourceManager(LoggingConfigurable):
         self.provisioner = Provisioner()
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
+        # You can't create the shared_clients here; they fail to
+        #  serialize and the Hub won't start.
 
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         """Create the user resources for this spawning session."""
+        # This actually gets called in a pre-spawn hook, which means no one
+        #  has yet called start() or poll() on the spawner, which means
+        #  we need to initialize its resources (particularly its API
+        #  client) ourselves.
+        await spawner.initialize_reflectors_and_clients()
         await self.provisioner.provision_homedir(spawner)
         try:
             await exponential_backoff(
                 partial(
                     self._wait_for_namespace_deletion,
                     spawner,
-                    spawner.namespace,
                 ),
                 f"Namespace {spawner.namespace} still being deleted",
                 timeout=spawner.k8s_api_request_retry_timeout,
@@ -77,8 +81,9 @@ class ResourceManager(LoggingConfigurable):
         especially when new things may be dynamically created outside of the
         hub, like dask.
         """
+        # It's a post-stop hook, so the spawner API client will exist.
         await exponential_backoff(
-            partial(self._wait_for_namespace_deletion, spawner, namespace),
+            partial(self._wait_for_namespace_deletion, spawner),
             f"Namespace {namespace} still being deleted",
             timeout=spawner.k8s_api_request_retry_timeout,
         )
@@ -141,23 +146,20 @@ class ResourceManager(LoggingConfigurable):
             api_version = resource["apiVersion"]
             if "." in api_version and ".k8s.io/" not in api_version:
                 crd_parser = CRDParser.from_crd_body(resource)
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(
-                        custom_api.create_namespaced_custom_object,
+                await asyncio.wait_for(
+                    custom_api.create_namespaced_custom_object(
                         body=resource,
                         group=crd_parser.group,
                         version=crd_parser.version,
                         namespace=spawner.namespace,
                         plural=crd_parser.plural,
                     ),
+                    spawner.k8s_api_request_timeout,
                 )
             else:
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(
-                        create_from_dict, api_client, resource
-                    ),
+                await asyncio.wait_for(
+                    create_from_dict(api_client, resource),
+                    spawner.k8s_api_request_timeout,
                 )
 
             # If this was a service account, note its name.
@@ -243,9 +245,7 @@ class ResourceManager(LoggingConfigurable):
         self.log.debug(f"Template values={template_values}")
         return template_values
 
-    async def _wait_for_namespace_deletion(
-        self, spawner: KubeSpawner, name: str
-    ) -> bool:
+    async def _wait_for_namespace_deletion(self, spawner: KubeSpawner) -> bool:
         """Waits for the user's namespace to be deleted.
 
         If the namespace exists but has not been marked for deletion, try to
@@ -261,21 +261,35 @@ class ResourceManager(LoggingConfigurable):
         """
         api = shared_client("CoreV1Api")
         try:
-            namespace = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(api.read_namespace, name),
+            ns_name = spawner.namespace
+            # Note that this is not safe to run if you aren't using
+            # user namespaces.  Check that:
+            assert spawner.enable_user_namespaces
+            # Let's do a further check for paranoia.  We will assume that
+            # a user namespace will be of the form <hub-namespace>-<something>
+            # This is true for Rubin user namespaces, but might not be
+            # universally.
+            #
+            # If opening the ns_path file fails, it means we are not running
+            # in a namespace with service accounts enabled, in which case
+            # we definitely want to let the exception crash the process.
+            ns_path = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+            with open(ns_path) as f:
+                hub_ns = f.read().strip()
+            assert ns_name.startswith(f"{hub_ns}-")
+
+            namespace = await asyncio.wait_for(
+                api.read_namespace(ns_name),
+                spawner.k8s_api_request_timeout,
             )
             if namespace.status.phase != "Terminating":
-                # Paranoia to ensure that we don't delete some random service
-                # namespace if something weird happens.
-                assert name.startswith("nublado2-")
-                self.log.info(f"Deleting namespace {name}")
-                await gen.with_timeout(
-                    timedelta(seconds=spawner.k8s_api_request_timeout),
-                    spawner.asynchronize(api.delete_namespace, name),
+                self.log.info(f"Deleting namespace {ns_name}")
+                await asyncio.wait_for(
+                    api.delete_namespace(ns_name),
+                    spawner.k8s_api_request_timeout,
                 )
             return False
-        except gen.TimeoutError:
+        except asyncio.TimeoutError:
             return False
         except ApiException as e:
             if e.status == 404:
@@ -295,23 +309,19 @@ class ResourceManager(LoggingConfigurable):
         """
         api = shared_client("CoreV1Api")
         try:
-            service_account = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(
-                    api.read_namespaced_service_account, name, namespace
-                ),
+            service_account = await asyncio.wait_for(
+                api.read_namespaced_service_account(name, namespace),
+                spawner.k8s_api_request_timeout,
             )
             if not service_account.secrets:
                 return False
             secret_name = service_account.secrets[0].name
-            secret = await gen.with_timeout(
-                timedelta(seconds=spawner.k8s_api_request_timeout),
-                spawner.asynchronize(
-                    api.read_namespaced_secret, secret_name, namespace
-                ),
+            secret = await asyncio.wait_for(
+                api.read_namespaced_secret(secret_name, namespace),
+                spawner.k8s_api_request_timeout,
             )
             return secret.metadata.name == secret_name
-        except gen.TimeoutError:
+        except asyncio.TimeoutError:
             return False
         except ApiException as e:
             if e.status == 404:
