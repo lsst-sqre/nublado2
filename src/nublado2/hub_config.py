@@ -20,9 +20,6 @@ class HubConfig(LoggingConfigurable):
         nc = NubladoConfig()
         self.log.debug(f"Nublado Config is:\n{nc}")
 
-        # type: ignore
-        # Upstream isn't type-checked and this belongs there.
-
         # This will possibly eventually move into upstream z2jh
 
         # Monkeypatch aiohttp connection noise (optional)
