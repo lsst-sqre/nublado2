@@ -108,6 +108,10 @@ attrs==21.4.0 \
     # via
     #   aiohttp
     #   jsonschema
+cachetools==5.0.0 \
+    --hash=sha256:486471dfa8799eb7ec503a8059e263db000cdda20075ce5e48903087f79d5fd6 \
+    --hash=sha256:8fecd4203a38af17928be7b90689d8083603073622229ca7077b72d8e5a976e4
+    # via google-auth
 cchardet==2.1.7 \
     --hash=sha256:0b859069bbb9d27c78a2c9eb997e6f4b738db2d7039a03f8792b4058d61d1109 \
     --hash=sha256:228d2533987c450f39acf7548f474dd6814c446e9d6bd228e8f1d9a2d210f10b \
@@ -143,6 +147,7 @@ certifi==2021.10.8 \
     --hash=sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872 \
     --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
     # via
+    #   kubernetes
     #   kubernetes-asyncio
     #   requests
 certipy==0.1.3 \
@@ -302,6 +307,10 @@ frozenlist==1.3.0 \
     # via
     #   aiohttp
     #   aiosignal
+google-auth==2.6.0 \
+    --hash=sha256:218ca03d7744ca0c8b6697b6083334be7df49b7bf76a69d555962fd1a7657b5f \
+    --hash=sha256:ad160fc1ea8f19e331a16a14a79f3d643d813a69534ba9611d2c80dc10439dad
+    # via kubernetes
 greenlet==1.1.2 \
     --hash=sha256:0051c6f1f27cb756ffc0ffbac7d2cd48cb0362ac1736871399a739b2885134d3 \
     --hash=sha256:00e44c8afdbe5467e4f7b5851be223be68adb4272f44696ee71fe46b7036a711 \
@@ -401,6 +410,10 @@ jupyterhub==2.1.1 \
 jupyterhub-idle-culler==1.2.1 \
     --hash=sha256:c84e45a51932a34bd95c08b3b6e8330fb0ee3391fa4d0f1ac0d4458a40492fd9 \
     --hash=sha256:d80822982d2590cb876d01849cee028943fdbdcc991c0f02fce45af3f40dd415
+    # via -r requirements/main.in
+kubernetes==22.6.0 \
+    --hash=sha256:5d329ee9b40e333e32f7bb62339cdce3eac47ab7c50b305ec21c114c49447e20 \
+    --hash=sha256:8578afa0fd4e7e86cfa4eeec204e4bad8a2c109ce52f85f8f3c593e9b0d47960
     # via -r requirements/main.in
 kubernetes-asyncio==19.15.1 \
     --hash=sha256:39f01eb267d1fec52e2f37f9fbe6b63b095011a64ca6de53988daf307d319f28
@@ -521,7 +534,9 @@ multidict==6.0.2 \
 oauthlib==3.2.0 \
     --hash=sha256:23a8208d75b902797ea29fd31fa80a15ed9dc2c6c16fe73f5d346f83f6fa27a2 \
     --hash=sha256:6db33440354787f9b7f3a6dbd4febf5d0f93758354060e802f6c06cb493022fe
-    # via jupyterhub
+    # via
+    #   jupyterhub
+    #   requests-oauthlib
 packaging==21.3 \
     --hash=sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb \
     --hash=sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522
@@ -547,6 +562,16 @@ psycopg2==2.9.3 \
     --hash=sha256:cb10d44e6694d763fa1078a26f7f6137d69f555a78ec85dc2ef716c37447e4b2 \
     --hash=sha256:d3ca6421b942f60c008f81a3541e8faf6865a28d5a9b48544b0ee4f40cac7fca
     # via -r requirements/main.in
+pyasn1==0.4.8 \
+    --hash=sha256:39c7e2ec30515947ff4e87fb6f456dfc6e84857d34be479c9d4a4ba4bf46aa5d \
+    --hash=sha256:aef77c9fb94a3ac588e87841208bdec464471d9871bd5050a287cc9a475cd0ba
+    # via
+    #   pyasn1-modules
+    #   rsa
+pyasn1-modules==0.2.8 \
+    --hash=sha256:905f84c712230b2c592c19470d3ca8d552de726050d1d1716282a1f6146be65e \
+    --hash=sha256:a50b808ffeb97cb3601dd25981f6b016cbb3d31fbf57a8b8a87428e6158d0c74
+    # via google-auth
 pycares==4.1.2 \
     --hash=sha256:03490be0e7b51a0c8073f877bec347eff31003f64f57d9518d419d9369452837 \
     --hash=sha256:056330275dea42b7199494047a745e1d9785d39fb8c4cd469dca043532240b80 \
@@ -621,6 +646,7 @@ python-dateutil==2.8.2 \
     # via
     #   jupyterhub
     #   jupyterhub-idle-culler
+    #   kubernetes
     #   kubernetes-asyncio
 python-json-logger==2.0.2 \
     --hash=sha256:202a4f29901a4b8002a6d1b958407eeb2dd1d83c18b18b816f5b64476dde9096 \
@@ -665,12 +691,24 @@ pyyaml==6.0 \
     --hash=sha256:e61ceaab6f49fb8bdfaa0f92c4b57bcfbea54c09277b1b4f7ac376bfb7a7c174 \
     --hash=sha256:f84fbc98b019fef2ee9a1cb3ce93e3187a6df0b2538a651bfb890254ba9f90b5
     # via
+    #   kubernetes
     #   kubernetes-asyncio
     #   rubin-kubespawner
 requests==2.27.1 \
     --hash=sha256:68d7c56fd5a8999887728ef304a6d12edc7be74f1cfa47714fc8b414525c9a61 \
     --hash=sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d
-    # via jupyterhub
+    # via
+    #   jupyterhub
+    #   kubernetes
+    #   requests-oauthlib
+requests-oauthlib==1.3.1 \
+    --hash=sha256:2577c501a2fb8d05a304c09d090d6e47c306fef15809d102b327cf8364bddab5 \
+    --hash=sha256:75beac4a47881eeb94d5ea5d6ad31ef88856affe2332b9aafb52c6452ccf0d7a
+    # via kubernetes
+rsa==4.8 \
+    --hash=sha256:5c6bd9dc7a543b7fe4304a631f8a8a3b674e2bbfc49c2ae96200cdbe55df6b17 \
+    --hash=sha256:95c5d300c4e879ee69708c428ba566c59478fd653cc3a22243eeb8ed846950bb
+    # via google-auth
 ruamel-yaml==0.17.21 \
     --hash=sha256:742b35d3d665023981bd6d16b3d24248ce5df75fdb4e2924e93a05c1f8b61ca7 \
     --hash=sha256:8b7ce697a2f212752a35c1ac414471dc16c424c9573be4926b56ff3f5d23b7af
@@ -712,6 +750,8 @@ six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
+    #   google-auth
+    #   kubernetes
     #   kubernetes-asyncio
     #   python-dateutil
 sqlalchemy==1.4.31 \
@@ -814,9 +854,14 @@ urllib3==1.26.8 \
     --hash=sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed \
     --hash=sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c
     # via
+    #   kubernetes
     #   kubernetes-asyncio
     #   requests
     #   rubin-kubespawner
+websocket-client==1.2.3 \
+    --hash=sha256:1315816c0acc508997eb3ae03b9d3ff619c9d12d544c9a9b553704b1cc4f6af5 \
+    --hash=sha256:2eed4cc58e4d65613ed6114af2f380f7910ff416fc8c46947f6e76b6815f56c0
+    # via kubernetes
 yarl==1.7.2 \
     --hash=sha256:044daf3012e43d4b3538562da94a88fb12a6490652dbc29fb19adfa02cf72eac \
     --hash=sha256:0cba38120db72123db7c58322fa69e3c0efa933040ffb586c3a87c063ec7cae8 \
