@@ -17,8 +17,10 @@ tornado
 
 kubernetes-asyncio
 
-# Until changes are accepted upstream:
+# Until changes are accepted upstream and a new kubespawner release happens:
 rubin-kubespawner
+# Until z2jh adopts kubespawner-asyncio:
+kubernetes
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in

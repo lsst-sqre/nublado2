@@ -4,6 +4,7 @@ __all__ = ["HubConfig"]
 
 import os
 
+from aiohttp import BaseConnector, ClientSession
 from jupyterhub.app import JupyterHub
 from traitlets.config import LoggingConfigurable
 
@@ -18,6 +19,36 @@ class HubConfig(LoggingConfigurable):
 
         nc = NubladoConfig()
         self.log.debug(f"Nublado Config is:\n{nc}")
+
+        # This will possibly eventually move into upstream z2jh
+
+        # Monkeypatch aiohttp connection noise (optional)
+        #
+        # There's a long and boring story about why, because the Reflector
+        #  is a shared singleton across Spawners, we can't actually close it
+        #  down cleanly, and if we want to use shared k8s API clients, we
+        #  can't use them as properly self-closing context managers.
+        #
+        # If you don't do this patching, then you will have a bunch of
+        #  errors in JupyterHub logs that don't tell you anything useful.
+        #
+        # Verify for yourself that we really are just patching out warnings:
+        # https://github.com/aio-libs/aiohttp/blob/d01e257da9b37c35c68b3931026a2d918c271446/aiohttp/client.py#L295-L310  # noqa
+        # https://github.com/aio-libs/aiohttp/blob/d01e257da9b37c35c68b3931026a2d918c271446/aiohttp/connector.py#L240-L258  # noqa
+
+        def empty_fn(*args, **kwargs):
+            pass
+
+        def quiet_close(self, **kwargs):
+            if self._closed:
+                return
+            if not self._conns:
+                return
+            if hasattr(self, "_close_immediately"):
+                _ = self._close_immediately()
+
+        ClientSession.__del__ = empty_fn
+        BaseConnector.__del__ = quiet_close
 
         c.JupyterHub.hub_connect_url = self._get_hub_connect_url()
         # Turn off concurrent spawn limit
