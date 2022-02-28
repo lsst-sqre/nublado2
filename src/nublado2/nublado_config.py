@@ -86,3 +86,7 @@ class NubladoConfig:
     @property
     def pull_secret_path(self) -> str:
         return self._config.get("pull_secret_path")
+
+    @property
+    def cachemachine_image_policy(self) -> str:
+        return self._config.get("cachemachine_image_policy")
