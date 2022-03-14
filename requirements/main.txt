@@ -374,9 +374,9 @@ idna==3.3 \
     # via
     #   requests
     #   yarl
-importlib-metadata==4.11.2 \
-    --hash=sha256:b36ffa925fe3139b2f6ff11d6925ffd4fa7bc47870165e3ac260ac7b4f91e6ac \
-    --hash=sha256:d16e8c1deb60de41b8e8ed21c1a7b947b0bc62fab7e1d470bcdf331cea2e6735
+importlib-metadata==4.11.3 \
+    --hash=sha256:1208431ca90a8cca1a6b8af391bb53c1a2db74e5d1cef6ddced95d4b2062edc6 \
+    --hash=sha256:ea4c597ebf37142f827b8f39299579e31685c31d3a438b59f469406afd0f2539
     # via -r requirements/main.in
 importlib-resources==5.4.0 \
     --hash=sha256:33a95faed5fc19b4bc16b29a6eeae248a3fe69dd55d4d229d2b480e23eeaad45 \
@@ -415,14 +415,14 @@ kubernetes==23.3.0 \
     --hash=sha256:05c98e4bd92f7091fa0fa58f594490e712c9151144d5f458235663a8909e342a \
     --hash=sha256:223ff8f0ece5bc20fb65545f09a2308c5e1e9c0be83ae68504c1b1c6baa38f5b
     # via -r requirements/main.in
-kubernetes-asyncio==19.15.1 \
-    --hash=sha256:39f01eb267d1fec52e2f37f9fbe6b63b095011a64ca6de53988daf307d319f28
+kubernetes-asyncio==21.7.1 \
+    --hash=sha256:1713c360b8eceb1de03e6a3f53eb00bffa8ab3fc27fd89e9cfdd0c9210813fee
     # via
     #   -r requirements/main.in
     #   rubin-kubespawner
-mako==1.1.6 \
-    --hash=sha256:4e9e345a41924a954251b95b4b28e14a301145b544901332e658907a7464b6b2 \
-    --hash=sha256:afaf8e515d075b22fad7d7b8b30e4a1c90624ff2f3733a06ec125f5a5f043a57
+mako==1.2.0 \
+    --hash=sha256:23aab11fdbbb0f1051b93793a58323ff937e98e34aece1c4219675122e57e4ba \
+    --hash=sha256:9a7c7e922b87db3686210cf49d5d767033a41d4010b284e747682c92bddd8b39
     # via alembic
 markupsafe==2.1.0 \
     --hash=sha256:023af8c54fe63530545f70dd2a2a7eed18d07a9a77b94e8bf1e2ff7f252db9a3 \
