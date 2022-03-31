@@ -92,7 +92,7 @@ function selectDropdown() {
     <input type="checkbox" id="reset_user_env"
      name="reset_user_env" value="true">
     <label for="reset_user_env">
-      Reset user environment
+      Reset user environment: relocate .cache, .jupyter, and .local
     </label><br />
   </div>
 </td>
