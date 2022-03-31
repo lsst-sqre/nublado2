@@ -20,7 +20,7 @@ from nublado2.nublado_config import NubladoConfig
 from nublado2.provisioner import Provisioner
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional
+    from typing import Any, Dict
 
     from jupyterhub.kubespawner import KubeSpawner
 
@@ -45,10 +45,6 @@ class ResourceManager(LoggingConfigurable):
         self.provisioner = Provisioner()
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
-        # You can't create the shared_clients here; they fail to
-        #  serialize and the Hub won't start.
-        self.custom_api: Optional[shared_client] = None
-        self.api_client: Optional[shared_client] = None
 
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
@@ -115,13 +111,11 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
-        if not self.api_client:
-            self.api_client = shared_client("ApiClient")
-            # This works around an infelicity in upstream Kubespawner's
-            # shared client implementation
-            self.api_client.api_client = self.api_client
-        if not self.custom_api:
-            self.custom_api = shared_client("CustomObjectsApi")
+        api_client = shared_client("ApiClient")
+        # This works around an infelicity in upstream Kubespawner's
+        # shared client implementation
+        api_client.api_client = api_client
+        custom_api = shared_client("CustomObjectsApi")
         template_values = await self._build_template_values(spawner, options)
 
         # Generate the list of additional user resources from the template.
@@ -149,7 +143,7 @@ class ResourceManager(LoggingConfigurable):
             if "." in api_version and ".k8s.io/" not in api_version:
                 crd_parser = CRDParser.from_crd_body(resource)
                 await asyncio.wait_for(
-                    self.custom_api.create_namespaced_custom_object(
+                    custom_api.create_namespaced_custom_object(
                         body=resource,
                         group=crd_parser.group,
                         version=crd_parser.version,
@@ -160,7 +154,7 @@ class ResourceManager(LoggingConfigurable):
                 )
             else:
                 await asyncio.wait_for(
-                    create_from_dict(self.api_client, resource),
+                    create_from_dict(api_client, resource),
                     spawner.k8s_api_request_timeout,
                 )
 
@@ -191,8 +185,10 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
-        if not self.api_client:
-            self.api_client = shared_client("APIClient")
+        api_client = shared_client("ApiClient")
+        # This works around an infelicity in upstream Kubespawner's
+        # shared client implementation
+        api_client.api_client = api_client
         dask_template = await spawner.get_pod_manifest()
 
         # Here we make a few mangles to the jupyter pod manifest
@@ -214,7 +210,7 @@ class ResourceManager(LoggingConfigurable):
         # alone doesn't.
         dask_yaml_stream = StringIO()
         self.yaml.dump(
-            self.api_client.sanitize_for_serialization(dask_template),
+            api_client.sanitize_for_serialization(dask_template),
             dask_yaml_stream,
         )
         return dask_yaml_stream.getvalue()
