@@ -14,12 +14,8 @@ jupyterhub-idle-culler
 psycopg2
 ruamel.yaml
 tornado
-
 kubernetes-asyncio
-
-# Until our resourcemanager can adopt upstream asyncio kubespawner
-rubin-kubespawner
-# jupyterhub-kubespawner
+jupyterhub-kubespawner
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
