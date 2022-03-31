@@ -20,7 +20,7 @@ from nublado2.nublado_config import NubladoConfig
 from nublado2.provisioner import Provisioner
 
 if TYPE_CHECKING:
-    from typing import Any, Dict
+    from typing import Any, Dict, Optional
 
     from jupyterhub.kubespawner import KubeSpawner
 
@@ -47,8 +47,8 @@ class ResourceManager(LoggingConfigurable):
         self.yaml.indent(mapping=2, sequence=4, offset=2)
         # You can't create the shared_clients here; they fail to
         #  serialize and the Hub won't start.
-        self.custom_api = None
-        self.api_client = None
+        self.custom_api: Optional[shared_client] = None
+        self.api_client: Optional[shared_client] = None
 
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
