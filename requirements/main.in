@@ -14,18 +14,14 @@ jupyterhub-idle-culler
 psycopg2
 ruamel.yaml
 tornado
-
 kubernetes-asyncio
-
-# Until changes are accepted upstream and a new kubespawner release happens:
-rubin-kubespawner
-# Until z2jh adopts kubespawner-asyncio:
-kubernetes
+jupyterhub-kubespawner
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
-# lockstep with the base image in Dockerfile.
-jupyterhub==2.1.1
+# lockstep with the base image in Dockerfile and with the app version
+# in the JupyterHub helm chart (https://jupyterhub.github.io/helm-chart/)
+jupyterhub==2.2.0
 
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.

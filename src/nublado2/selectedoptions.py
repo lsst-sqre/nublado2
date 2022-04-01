@@ -32,7 +32,7 @@ class SelectedOptions:
         self._size = nc.sizes[size_name]
 
         self._debug = "TRUE" if "enable_debug" in options else ""
-        self._clear_dotlocal = "TRUE" if "clear_dotlocal" in options else ""
+        self._reset_user_env = "TRUE" if "reset_user_env" in options else ""
 
     @property
     def debug(self) -> str:
@@ -43,12 +43,13 @@ class SelectedOptions:
         return self._debug
 
     @property
-    def clear_dotlocal(self) -> str:
-        """String to pass in for CLEAR_DOTLOCAL variable in the lab.
+    def reset_user_env(self) -> str:
+        """String to pass in for RESET_USER_ENV variable in the lab.
 
-        This gets rid of the user's .local directory which may
-        cause issues during startup."""
-        return self._clear_dotlocal
+        This moves the user's .local, .cache, and .jupyter environments
+        aside.  That in turn allows getting out of the common case where
+        local package installation conflicts with the RSP machinery."""
+        return self._reset_user_env
 
     @property
     def image_info(self) -> ImageInfo:

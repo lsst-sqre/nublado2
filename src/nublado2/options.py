@@ -89,10 +89,10 @@ function selectDropdown() {
      name="enable_debug" value="true">
     <label for="enable_debug">Enable debug logs</label><br />
 
-    <input type="checkbox" id="clear_dotlocal"
-     name="clear_dotlocal" value="true">
-    <label for="clear_dotlocal">
-      Clear <tt>.local</tt> directory (caution!)
+    <input type="checkbox" id="reset_user_env"
+     name="reset_user_env" value="true">
+    <label for="reset_user_env">
+      Reset user environment: relocate .cache, .jupyter, and .local
     </label><br />
   </div>
 </td>

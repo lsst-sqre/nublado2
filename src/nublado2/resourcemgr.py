@@ -45,18 +45,11 @@ class ResourceManager(LoggingConfigurable):
         self.provisioner = Provisioner()
         self.yaml = YAML()
         self.yaml.indent(mapping=2, sequence=4, offset=2)
-        # You can't create the shared_clients here; they fail to
-        #  serialize and the Hub won't start.
 
     async def create_user_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
         """Create the user resources for this spawning session."""
-        # This actually gets called in a pre-spawn hook, which means no one
-        #  has yet called start() or poll() on the spawner, which means
-        #  we need to initialize its resources (particularly its API
-        #  client) ourselves.
-        await spawner.initialize_reflectors_and_clients()
         await self.provisioner.provision_homedir(spawner)
         try:
             await exponential_backoff(
@@ -118,7 +111,6 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
-        api_client = shared_client("ApiClient")
         custom_api = shared_client("CustomObjectsApi")
         template_values = await self._build_template_values(spawner, options)
 
@@ -158,7 +150,7 @@ class ResourceManager(LoggingConfigurable):
                 )
             else:
                 await asyncio.wait_for(
-                    create_from_dict(api_client, resource),
+                    create_from_dict(spawner.api.api_client, resource),
                     spawner.k8s_api_request_timeout,
                 )
 
@@ -189,7 +181,6 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
-        api_client = shared_client("ApiClient")
         dask_template = await spawner.get_pod_manifest()
 
         # Here we make a few mangles to the jupyter pod manifest
@@ -211,7 +202,7 @@ class ResourceManager(LoggingConfigurable):
         # alone doesn't.
         dask_yaml_stream = StringIO()
         self.yaml.dump(
-            api_client.sanitize_for_serialization(dask_template),
+            spawner.api.api_client.sanitize_for_serialization(dask_template),
             dask_yaml_stream,
         )
         return dask_yaml_stream.getvalue()
