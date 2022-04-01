@@ -147,6 +147,7 @@ async def test_create_kubernetes_resources(
     spawner.hub.base_url = "/nb/hub/"
     spawner.user = Mock(spec=User)
     spawner.user.name = "someuser"
+    spawner.api = kubernetes_api_mock
     auth_state = {
         "token": "user-token",
         "uid": 1234,

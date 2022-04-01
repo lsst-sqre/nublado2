@@ -111,10 +111,6 @@ class ResourceManager(LoggingConfigurable):
     async def _create_kubernetes_resources(
         self, spawner: KubeSpawner, options: SelectedOptions
     ) -> None:
-        api_client = shared_client("ApiClient")
-        # This works around an infelicity in upstream Kubespawner's
-        # shared client implementation
-        api_client.api_client = api_client
         custom_api = shared_client("CustomObjectsApi")
         template_values = await self._build_template_values(spawner, options)
 
@@ -154,7 +150,7 @@ class ResourceManager(LoggingConfigurable):
                 )
             else:
                 await asyncio.wait_for(
-                    create_from_dict(api_client, resource),
+                    create_from_dict(spawner.api.api_client, resource),
                     spawner.k8s_api_request_timeout,
                 )
 
@@ -185,10 +181,6 @@ class ResourceManager(LoggingConfigurable):
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
-        api_client = shared_client("ApiClient")
-        # This works around an infelicity in upstream Kubespawner's
-        # shared client implementation
-        api_client.api_client = api_client
         dask_template = await spawner.get_pod_manifest()
 
         # Here we make a few mangles to the jupyter pod manifest
@@ -210,7 +202,7 @@ class ResourceManager(LoggingConfigurable):
         # alone doesn't.
         dask_yaml_stream = StringIO()
         self.yaml.dump(
-            api_client.sanitize_for_serialization(dask_template),
+            spawner.api.api_client.sanitize_for_serialization(dask_template),
             dask_yaml_stream,
         )
         return dask_yaml_stream.getvalue()
