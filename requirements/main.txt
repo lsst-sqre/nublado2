@@ -400,11 +400,12 @@ jupyterhub-idle-culler==1.2.1 \
     --hash=sha256:c84e45a51932a34bd95c08b3b6e8330fb0ee3391fa4d0f1ac0d4458a40492fd9 \
     --hash=sha256:d80822982d2590cb876d01849cee028943fdbdcc991c0f02fce45af3f40dd415
     # via -r requirements/main.in
-jupyterhub-kubespawner==3.0.2 \
-    --hash=sha256:26682d5fffa244de5b82cb3253e9bf91721ddb52bb10a8e1d9f5e3549ebb6593 \
-    --hash=sha256:e80410c4aede3eebdb61da38dfc5a89ec7d15047e21c32e67835d91701fcba85
+jupyterhub-kubespawner==4.0.0 \
+    --hash=sha256:09d6005aa722a99f0a7e3127c6029465e5603451d4c0077fcef32834dba2892a \
+    --hash=sha256:d06a6f90711c6748fc48f681994f04f1240d23117c341b1f3ac9897fd9ef3da2
     # via -r requirements/main.in
 kubernetes-asyncio==22.6.4 \
+    --hash=sha256:a552211c72c7452999d7bf3b09326a0557899d749b001743aa63f7fc3fcbcb2c \
     --hash=sha256:b372ccdac9ddda157da1d1368c6ad43c2fa05249721522d5f07873f245410e00
     # via
     #   -r requirements/main.in
