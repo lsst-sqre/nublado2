@@ -392,9 +392,9 @@ jupyter-telemetry==0.1.0 \
     --hash=sha256:1de3e423b23aa40ca4a4238d65c56dda544061ff5aedc3f7647220ed7e3b9589 \
     --hash=sha256:445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314
     # via jupyterhub
-jupyterhub==2.2.0 \
-    --hash=sha256:6aa7f15a5e198fa8aad8167a755508593e47719e7950fc09d7d1281b962343a4 \
-    --hash=sha256:e348d26d70072cbdc018d3375c12a8cff23fa8771a8d7ca75827710c83f93168
+jupyterhub==2.3.0 \
+    --hash=sha256:15e6711d2bd3dc0835f5fcc6ef1c48fef3aa2562f09e0c469c2a46af4ea9c318 \
+    --hash=sha256:bfaa961485adbea682241c17a0be1def8f29198f61f66ee5fd7c8915b2fdf69b
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
@@ -593,9 +593,9 @@ pyopenssl==22.0.0 \
     --hash=sha256:660b1b1425aac4a1bea1d94168a85d99f0b3144c869dd4390d27629d0087f1bf \
     --hash=sha256:ea252b38c87425b64116f808355e8da644ef9b07e429398bfece610f893ee2e0
     # via certipy
-pyparsing==3.0.8 \
-    --hash=sha256:7bf433498c016c4314268d95df76c81b842a4cb2b276fa3312cfb1e1d85f6954 \
-    --hash=sha256:ef7b523f6356f763771559412c0d7134753f037822dad1b16945b7b846f7ad06
+pyparsing==3.0.9 \
+    --hash=sha256:2b020ecf7d21b687f219b71ecad3631f644a47f01403fa1d1036b0c6416d70fb \
+    --hash=sha256:5026bae9a10eeaefb61dab2f09052b9f4307d44aee4eda64b309723d8d206bbc
     # via packaging
 pyrsistent==0.18.1 \
     --hash=sha256:0e3e1fcc45199df76053026a51cc59ab2ea3fc7c094c6627e93b7b44cdae2c8c \
@@ -805,9 +805,9 @@ tornado==6.1 \
     #   -r requirements/main.in
     #   jupyterhub
     #   jupyterhub-idle-culler
-traitlets==5.1.1 \
-    --hash=sha256:059f456c5a7c1c82b98c2e8c799f39c9b8128f6d0d46941ee118daace9eb70c7 \
-    --hash=sha256:2d313cc50a42cd6c277e7d7dc8d4d7fedd06a2c215f78766ae7b1a66277e0033
+traitlets==5.2.0 \
+    --hash=sha256:60474f39bf1d39a11e0233090b99af3acee93bbc2281777e61dd8c87da8a0014 \
+    --hash=sha256:9dd4025123fbe018a2092b2ad6984792f53ea3362c698f37473258b1fa97b0bc
     # via
     #   jupyter-telemetry
     #   jupyterhub
