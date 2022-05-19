@@ -19,6 +19,7 @@ from tornado.httputil import HTTPHeaders
 from nublado2.auth import (
     GafaelfawrAuthenticator,
     GafaelfawrLoginHandler,
+    GafaelfawrLogoutHandler,
     _build_auth_info,
 )
 
@@ -36,7 +37,8 @@ async def config_mock() -> AsyncGenerator:
 def test_authenticator() -> None:
     authenticator = GafaelfawrAuthenticator()
     assert authenticator.get_handlers(MagicMock()) == [
-        ("/gafaelfawr/login", GafaelfawrLoginHandler)
+        ("/gafaelfawr/login", GafaelfawrLoginHandler),
+        ("/logout", GafaelfawrLogoutHandler),
     ]
     assert authenticator.login_url("/hub") == "/hub/gafaelfawr/login"
 
