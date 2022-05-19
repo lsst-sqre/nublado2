@@ -193,9 +193,8 @@ class GafaelfawrLogoutHandler(LogoutHandler):
         """Unconditionally true for Gafaelfawr logout"""
         return True
 
-    async def render_logout_page(self):
+    async def render_logout_page(self) -> None:
         self.redirect("/logout", permanent=False)
-        return True
 
 
 class GafaelfawrLoginHandler(BaseHandler):
