@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from jupyterhub.auth import Authenticator
-from jupyterhub.handlers import BaseHandler
+from jupyterhub.handlers import BaseHandler, LogoutHandler
 from jupyterhub.utils import url_path_join
 from tornado import web
 
@@ -140,8 +140,11 @@ class GafaelfawrAuthenticator(Authenticator):
         raise NotImplementedError()
 
     def get_handlers(self, app: JupyterHub) -> List[Route]:
-        """Register the header-only login handler."""
-        return [("/gafaelfawr/login", GafaelfawrLoginHandler)]
+        """Register the header-only login and the logout handlers."""
+        return [
+            ("/gafaelfawr/login", GafaelfawrLoginHandler),
+            ("/logout", GafaelfawrLogoutHandler),
+        ]
 
     def login_url(self, base_url: str) -> str:
         """Override the login URL.
@@ -176,6 +179,22 @@ class GafaelfawrAuthenticator(Authenticator):
             return True
         else:
             return await _build_auth_info(handler.request.headers)
+
+
+class GafaelfawrLogoutHandler(LogoutHandler):
+    """Logout handler for Gafaelfawr authentication.
+
+    A logout should always stop all running servers, and then redirect to the
+    RSP logout page.
+    """
+
+    @property
+    def shutdown_on_logout(self) -> bool:
+        """Unconditionally true for Gafaelfawr logout"""
+        return True
+
+    async def render_logout_page(self) -> None:
+        self.redirect("/logout", permanent=False)
 
 
 class GafaelfawrLoginHandler(BaseHandler):
