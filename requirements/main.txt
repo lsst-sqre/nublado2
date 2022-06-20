@@ -137,9 +137,9 @@ cchardet==2.1.7 \
     --hash=sha256:f86e0566cb61dc4397297696a4a1b30f6391b50bc52b4f073507a48466b6255a \
     --hash=sha256:fdac1e4366d0579fff056d1280b8dc6348be964fda8ebb627c0269e097ab37fa
     # via -r requirements/main.in
-certifi==2022.5.18.1 \
-    --hash=sha256:9c5705e395cd70084351dd8ad5c41e65655e08ce46f2ec9cf6c2c08390f71eb7 \
-    --hash=sha256:f1d53542ee8cbedbe2118b5686372fb33c297fcd6379b050cca0ef13a597382a
+certifi==2022.6.15 \
+    --hash=sha256:84c85a9078b11105f04f3036a9482ae10e4621616db313fe045dd24743a0820d \
+    --hash=sha256:fe86415d55e84719d75f8b69414f6438ac3547d2078ab91b67e779ef69378412
     # via
     #   kubernetes-asyncio
     #   requests
@@ -369,9 +369,9 @@ importlib-metadata==4.11.4 \
     --hash=sha256:5d26852efe48c0a32b0509ffbc583fda1a2266545a78d104a6f4aff3db17d700 \
     --hash=sha256:c58c8eb8a762858f49e18436ff552e83914778e50e9d2f1660535ffb364552ec
     # via -r requirements/main.in
-importlib-resources==5.7.1 \
-    --hash=sha256:b6062987dfc51f0fcb809187cffbd60f35df7acb4589091f154214af6d0d49d3 \
-    --hash=sha256:e447dc01619b1e951286f3929be820029d48c75eb25d265c28b92a16548212b8
+importlib-resources==5.8.0 \
+    --hash=sha256:568c9f16cb204f9decc8d6d24a572eeea27dacbb4cee9e6b03a8025736769751 \
+    --hash=sha256:7952325ffd516c05a8ad0858c74dff2c3343f136fe66a6002b2623dd1d43f223
     # via -r requirements/main.in
 inflect==5.6.0 \
     --hash=sha256:967d6db69932bac9f1977b8f2dd131a59147f4b56134cfc74a3f44e5adb65223 \
@@ -406,9 +406,9 @@ jupyterhub-kubespawner==4.1.0 \
     --hash=sha256:77c669e00586529534aefe6ae8e6a39588b8ca3d58d21f1be4742b47062d78cf \
     --hash=sha256:7fbcdf5ca7bd36bbe64c5ac5e76bdf76faa609949652ec6dc5b2f527542b55a9
     # via -r requirements/main.in
-kubernetes-asyncio==22.6.5 \
-    --hash=sha256:1d0e7c30015296454d23cd52214bb946c61585785c17bc4a3742478c1a103421 \
-    --hash=sha256:f52877a5460438f4af789f0376893e92aed0a15b11357e887635543f19ed55d1
+kubernetes-asyncio==23.6.0 \
+    --hash=sha256:4e6736e46ce4d07d9a33738f9e013e7e9d5c61a8d5b6d44c793480a6608c39a2 \
+    --hash=sha256:68c6a18c2ca3a5515b59cc43aec6fcd5832afe3a513b70636ac772948b46695e
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
@@ -805,9 +805,9 @@ tornado==6.1 \
     #   -r requirements/main.in
     #   jupyterhub
     #   jupyterhub-idle-culler
-traitlets==5.2.2.post1 \
-    --hash=sha256:1530d04badddc6a73d50b7ee34667d4b96914da352109117b4280cb56523a51b \
-    --hash=sha256:74803a1baa59af70f023671d86d5c7a834c931186df26d50d362ee6a1ff021fd
+traitlets==5.3.0 \
+    --hash=sha256:0bb9f1f9f017aa8ec187d8b1b2a7a6626a2a1d877116baba52a129bfa124f8e2 \
+    --hash=sha256:65fa18961659635933100db8ca120ef6220555286949774b9cfc106f941d1c7a
     # via
     #   jupyter-telemetry
     #   jupyterhub
