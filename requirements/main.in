@@ -21,9 +21,14 @@ jupyterhub-kubespawner
 # upgraded without our explicit approval, and it should be upgraded in
 # lockstep with the base image in Dockerfile and with the app version
 # in the JupyterHub helm chart (https://jupyterhub.github.io/helm-chart/)
-jupyterhub==2.3.0
+jupyterhub==2.3.1
 
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.
 importlib-metadata
 importlib-resources
+
+# Required by jsonschema for Python 3.8, so install it unconditionally
+# until Python 3.8 support is dropped so that we have consistent
+# dependencies.
+pkgutil-resolve-name
