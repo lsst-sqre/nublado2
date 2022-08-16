@@ -25,11 +25,19 @@ class NubladoHooks(LoggingConfigurable):
 
         auth_state = await spawner.user.get_auth_state()
 
-        # We now always spawn as the target user; there is no way
-        #  to do "provisionator" anymore
+        # Gafaelfawr 5.1.0 and later will fill out the user's primary GID for
+        # GitHub and correctly-configured LDAP environments, but some
+        # configurations don't generate a GID and older versions do not.  In
+        # those cases, fall back on assuming a user private group with the
+        # same GID as the user's UID, which was the previous behavior.
         spawner.uid = auth_state["uid"]
-        spawner.gid = auth_state["uid"]
-        spawner.supplemental_gids = [g["id"] for g in auth_state["groups"]]
+        if "gid" in auth_state:
+            spawner.gid = auth_state["gid"]
+        else:
+            spawner.gid = spawner.uid
+        spawner.supplemental_gids = [
+            g["id"] for g in auth_state["groups"] if g["id"] != spawner.gid
+        ]
 
         # Since we will create a serviceaccount in the user resources,
         # make the pod use that.  This will also automount the token,

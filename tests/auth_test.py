@@ -95,6 +95,7 @@ async def test_login_handler(config_mock: MagicMock) -> None:
             {
                 "username": "bar",
                 "uid": 4510,
+                "gid": 1761,
                 "groups": [
                     {"name": "group-one", "id": 1726},
                     {"name": "another", "id": 6789},
@@ -107,6 +108,7 @@ async def test_login_handler(config_mock: MagicMock) -> None:
             "auth_state": {
                 "username": "bar",
                 "uid": 4510,
+                "gid": 1761,
                 "token": "user-token",
                 "groups": [
                     {"name": "group-one", "id": 1726},
