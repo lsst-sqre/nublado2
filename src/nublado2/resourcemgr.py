@@ -123,7 +123,6 @@ class ResourceManager(LoggingConfigurable):
 
         # Add in the standard labels and annotations common to every resource
         # and create the resources.
-        service_account = None
         for resource in resources:
             if "metadata" not in resource:
                 resource["metadata"] = {}
@@ -154,30 +153,11 @@ class ResourceManager(LoggingConfigurable):
                     spawner.k8s_api_request_timeout,
                 )
 
-            # If this was a service account, note its name.
-            if resource["kind"] == "ServiceAccount":
-                service_account = resource["metadata"]["name"]
-
         # Construct the lab environment ConfigMap.  This is constructed from
         # configuration settings and doesn't use a resource template like
         # other resources.  This has to be done last, becuase the namespace is
         # created from the user resources template.
         await self._create_lab_environment_configmap(spawner, template_values)
-
-        # Wait for the service account to generate a token before proceeding.
-        # Otherwise, we may try to create the pod before the service account
-        # token exists and Kubernetes will object.
-        if service_account:
-            await exponential_backoff(
-                partial(
-                    self._wait_for_service_account_token,
-                    spawner,
-                    service_account,
-                    spawner.namespace,
-                ),
-                f"Service account {service_account} has no token",
-                timeout=spawner.k8s_api_request_retry_timeout,
-            )
 
     async def _build_dask_template(self, spawner: KubeSpawner) -> str:
         """Build a template for dask workers from the jupyter pod manifest."""
@@ -285,37 +265,4 @@ class ResourceManager(LoggingConfigurable):
         except ApiException as e:
             if e.status == 404:
                 return True
-            raise
-
-    async def _wait_for_service_account_token(
-        self, spawner: KubeSpawner, name: str, namespace: str
-    ) -> bool:
-        """Waits for a service account to spawn an associated token.
-
-        Returns
-        -------
-        done : `bool`
-            `True` once the secret exists, `False` otherwise (so it can be
-            called from ``exponential_backoff``)
-        """
-        api = shared_client("CoreV1Api")
-        try:
-            service_account = await asyncio.wait_for(
-                api.read_namespaced_service_account(name, namespace),
-                spawner.k8s_api_request_timeout,
-            )
-            if not service_account.secrets:
-                return False
-            secret_name = service_account.secrets[0].name
-            secret = await asyncio.wait_for(
-                api.read_namespaced_secret(secret_name, namespace),
-                spawner.k8s_api_request_timeout,
-            )
-            return secret.metadata.name == secret_name
-        except asyncio.TimeoutError:
-            return False
-        except ApiException as e:
-            if e.status == 404:
-                self.log.debug("Waiting for secret for service account {name}")
-                return False
             raise
