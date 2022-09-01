@@ -34,8 +34,9 @@ USER_RESOURCES_TEMPLATE = """
     namespace: "{{ user_namespace }}"
   data:
     group: |
-      {{user}}:x:{{uid}}:{% for group in groups %}
-      {{ group.name }}:x:{{ group.id }}:{{ user }}{% endfor %}
+      {{user}}:x:{{gid if gid else uid}}:{% for group in groups %}\
+{% if "id" in group %}
+      {{ group.name }}:x:{{ group.id }}:{{ user }}{% endif %}{% endfor %}
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -104,6 +105,7 @@ def config_mock() -> Iterator[None]:
             "FIREFLY_ROUTE": "/portal/app",
             "HUB_ROUTE": "{{ nublado_base_url }}",
             "EXTERNAL_GROUPS": "{{ external_groups }}",
+            "EXTERNAL_GID": "{{ gid }}",
             "EXTERNAL_UID": "{{ uid }}",
             "ACCESS_TOKEN": "{{ token }}",
             "IMAGE_DIGEST": "{{ options.image_info.digest }}",
@@ -151,7 +153,12 @@ async def test_create_kubernetes_resources(
     auth_state = {
         "token": "user-token",
         "uid": 1234,
-        "groups": [{"name": "foo", "id": 1235}, {"name": "bar", "id": 4567}],
+        "gid": 1551,
+        "groups": [
+            {"name": "foo", "id": 1235},
+            {"name": "bar", "id": 4567},
+            {"name": "baz"},
+        ],
     }
     pod_manifest = V1Pod(
         api_version="v1",
@@ -236,7 +243,7 @@ spec:
             },
             "data": {
                 "group": (
-                    "someuser:x:1234:\n"
+                    "someuser:x:1551:\n"
                     "foo:x:1235:someuser\n"
                     "bar:x:4567:someuser\n"
                 )
@@ -255,6 +262,7 @@ spec:
                 "EXTERNAL_INSTANCE_URL": "https://data.example.com/",
                 "FIREFLY_ROUTE": "/portal/app",
                 "HUB_ROUTE": "/nb/hub/",
+                "EXTERNAL_GID": "1551",
                 "EXTERNAL_GROUPS": "foo:1235,bar:4567",
                 "EXTERNAL_UID": "1234",
                 "ACCESS_TOKEN": "user-token",

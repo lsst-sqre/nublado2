@@ -35,8 +35,13 @@ class NubladoHooks(LoggingConfigurable):
             spawner.gid = auth_state["gid"]
         else:
             spawner.gid = spawner.uid
+
+        # Not all groups may have GIDs.  Only those that do contribute to the
+        # supplemental GIDs.
         spawner.supplemental_gids = [
-            g["id"] for g in auth_state["groups"] if g["id"] != spawner.gid
+            g["id"]
+            for g in auth_state["groups"]
+            if "id" in g and g["id"] != spawner.gid
         ]
 
         # Since we will create a serviceaccount in the user resources,

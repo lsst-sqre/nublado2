@@ -194,15 +194,21 @@ class ResourceManager(LoggingConfigurable):
         auth_state = await spawner.user.get_auth_state()
         groups = auth_state["groups"]
 
-        # Build a comma separated list of group:gid
-        # ex: group1:1000,group2:1001,group3:1002
-        external_groups = ",".join([f'{g["name"]}:{g["id"]}' for g in groups])
+        # Build a comma-separated list of groups used to populate the
+        # /etc/groups file.  Only groups with GIDs can be added, so skip
+        # groups without GIDs.
+        #
+        # Example: group1:1000,group2:1001,group3:1002
+        external_groups = ",".join(
+            [f'{g["name"]}:{g["id"]}' for g in groups if "id" in g]
+        )
 
         # Define the template variables.
         template_values = {
             "user_namespace": spawner.namespace,
             "user": spawner.user.name,
             "uid": auth_state["uid"],
+            "gid": auth_state.get("gid"),
             "token": auth_state["token"],
             "groups": groups,
             "external_groups": external_groups,
