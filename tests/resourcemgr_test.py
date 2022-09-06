@@ -33,9 +33,12 @@ USER_RESOURCES_TEMPLATE = """
     name: group
     namespace: "{{ user_namespace }}"
   data:
+    user: |
+      {{user}}:x:{{uid}}:{{gid if gid else uid}}::/home/{{ user }}:/bin/bash
     group: |
-      {{user}}:x:{{uid}}:{% for group in groups %}
-      {{ group.name }}:x:{{ group.id }}:{{ user }}{% endfor %}
+      {%- for group in groups %}{% if "id" in group %}
+      {{ group.name }}:x:{{ group.id }}:\
+{{ user if group.id != gid else ""}}{% endif %}{% endfor %}
 - apiVersion: v1
   kind: ConfigMap
   metadata:
@@ -104,6 +107,7 @@ def config_mock() -> Iterator[None]:
             "FIREFLY_ROUTE": "/portal/app",
             "HUB_ROUTE": "{{ nublado_base_url }}",
             "EXTERNAL_GROUPS": "{{ external_groups }}",
+            "EXTERNAL_GID": "{{ gid }}",
             "EXTERNAL_UID": "{{ uid }}",
             "ACCESS_TOKEN": "{{ token }}",
             "IMAGE_DIGEST": "{{ options.image_info.digest }}",
@@ -151,7 +155,13 @@ async def test_create_kubernetes_resources(
     auth_state = {
         "token": "user-token",
         "uid": 1234,
-        "groups": [{"name": "foo", "id": 1235}, {"name": "bar", "id": 4567}],
+        "gid": 1551,
+        "groups": [
+            {"name": "foo", "id": 1235},
+            {"name": "primary", "id": 1551},
+            {"name": "bar", "id": 4567},
+            {"name": "baz"},
+        ],
     }
     pod_manifest = V1Pod(
         api_version="v1",
@@ -235,11 +245,12 @@ spec:
                 "labels": spawner.extra_labels,
             },
             "data": {
+                "user": "someuser:x:1234:1551::/home/someuser:/bin/bash\n",
                 "group": (
-                    "someuser:x:1234:\n"
                     "foo:x:1235:someuser\n"
+                    "primary:x:1551:\n"
                     "bar:x:4567:someuser\n"
-                )
+                ),
             },
         },
         {
@@ -255,7 +266,8 @@ spec:
                 "EXTERNAL_INSTANCE_URL": "https://data.example.com/",
                 "FIREFLY_ROUTE": "/portal/app",
                 "HUB_ROUTE": "/nb/hub/",
-                "EXTERNAL_GROUPS": "foo:1235,bar:4567",
+                "EXTERNAL_GID": "1551",
+                "EXTERNAL_GROUPS": "foo:1235,primary:1551,bar:4567",
                 "EXTERNAL_UID": "1234",
                 "ACCESS_TOKEN": "user-token",
                 "IMAGE_DIGEST": "sha256:123456789abcdef",
