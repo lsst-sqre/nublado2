@@ -249,10 +249,6 @@ cryptography==38.0.1 \
     --hash=sha256:d4ef6cc305394ed669d4d9eebf10d3a101059bdcf2669c366ec1d14e4fb227bd \
     --hash=sha256:d9e69ae01f99abe6ad646947bba8941e896cb3aa805be2597a0400e0764b5818
     # via pyopenssl
-entrypoints==0.4 \
-    --hash=sha256:b706eddaa9218a19ebcd67b56818f05bb27589b1ca9e8d797b74affad4ccacd4 \
-    --hash=sha256:f174b5ff827504fd3cd97cc3f8649f3693f51538c7e4bdf3ef002c8429d42f9f
-    # via jupyterhub
 escapism==1.0.1 \
     --hash=sha256:73256bdfb4f22230f0428fc6efecee61cdc4fad531b6f98b849cb9c80711e4ec \
     --hash=sha256:d28f19edc3cb1ffc36fa238956ecc068695477e748f57157c6dde00a6b77f229
@@ -409,9 +405,9 @@ jupyter-telemetry==0.1.0 \
     --hash=sha256:1de3e423b23aa40ca4a4238d65c56dda544061ff5aedc3f7647220ed7e3b9589 \
     --hash=sha256:445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314
     # via jupyterhub
-jupyterhub==2.3.1 \
-    --hash=sha256:0fd5a5671187d501f81daa57e40178cf2804bfd2f325741ccad31a2ce5ff0c5f \
-    --hash=sha256:f968f4f1392a9bb21e0fd6e1452bc925f7e3d2dc1f02efbe4afd63ecb9e81e0f
+jupyterhub==3.0.0 \
+    --hash=sha256:05cdfebd800cf3e55566fb5b61110c5f64fed8ca3c56ef0142290baffbc7fb69 \
+    --hash=sha256:1d0b437033d8fd75d7ab4715ee3853da3069d6f14b4a0b9092f705efd0faa3b4
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
