@@ -85,3 +85,26 @@ async def test_provision() -> None:
         m.get(status_url, callback=handler, repeat=True)
         m.get(wait_url, callback=handler)
         await resource_manager.provisioner.provision_homedir(spawner)
+
+
+@pytest.mark.asyncio
+async def test_no_gids() -> None:
+    resource_manager = ResourceManager()
+    spawner = Mock(spec=Spawner)
+    spawner.user = Mock(spec=User)
+    spawner.user.name = "someuser"
+    auth_state = {
+        "uid": 1234,
+        "groups": [{"name": "foo"}],
+    }
+    spawner.user.get_auth_state.return_value = auth_state
+
+    commission_url = "https://data.example.com/moneypenny/users"
+    status_url = "https://data.example.com/moneypenny/users/someuser"
+    wait_url = "https://data.example.com/moneypenny/users/someuser/wait"
+    with aioresponses() as m:
+        handler = build_handler("someuser", 1234, [])
+        m.post(commission_url, callback=handler)
+        m.get(status_url, callback=handler, repeat=True)
+        m.get(wait_url, callback=handler)
+        await resource_manager.provisioner.provision_homedir(spawner)

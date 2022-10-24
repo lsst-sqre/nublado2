@@ -34,11 +34,16 @@ class Provisioner(LoggingConfigurable):
         base_url = self.nublado_config.base_url
         token = self.nublado_config.gafaelfawr_token
 
+        # Only include groups with GIDs.  Provisioning can't do anything with
+        # the ones that don't have GIDs, and currently the model doesn't allow
+        # them.
+        groups = [g for g in auth_state["groups"] if "id" in g]
+
         # Start the provisioning request.
         dossier = {
             "username": spawner.user.name,
             "uid": int(auth_state["uid"]),
-            "groups": auth_state["groups"],
+            "groups": groups,
         }
         provision_url = urljoin(base_url, "moneypenny/users")
         session = await get_session()
