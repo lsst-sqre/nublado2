@@ -461,9 +461,9 @@ kubernetes-asyncio==24.2.2 \
     # via
     #   -r requirements/main.in
     #   jupyterhub-kubespawner
-mako==1.2.3 \
-    --hash=sha256:7fde96466fcfeedb0eed94f187f20b23d85e4cb41444be0e542e2c8c65c396cd \
-    --hash=sha256:c413a086e38cd885088d5e165305ee8eed04e8b3f8f62df343480da0a385735f
+mako==1.2.4 \
+    --hash=sha256:c97c79c018b9165ac9922ae4f32da095ffd3c4e6872b45eded42926deea46818 \
+    --hash=sha256:d60a3903dc3bb01a18ad6a89cdbe2e4eadc69c0bc8ef1e3773ba53d44c3f7a34
     # via alembic
 markupsafe==2.1.1 \
     --hash=sha256:0212a68688482dc52b2d45013df70d169f542b7394fc744c02a57374a4207003 \
@@ -743,9 +743,9 @@ python-json-logger==2.0.4 \
     --hash=sha256:3b03487b14eb9e4f77e4fc2a023358b5394b82fd89cecf5586259baed57d8c6f \
     --hash=sha256:764d762175f99fcc4630bd4853b09632acb60a6224acb27ce08cd70f0b1b81bd
     # via jupyter-telemetry
-python-slugify==6.1.2 \
-    --hash=sha256:272d106cb31ab99b3496ba085e3fea0e9e76dcde967b5e9992500d1f785ce4e1 \
-    --hash=sha256:7b2c274c308b62f4269a9ba701aa69a797e9bca41aeee5b3a9e79e36b6656927
+python-slugify==7.0.0 \
+    --hash=sha256:003aee64f9fd955d111549f96c4b58a3f40b9319383c70fad6277a4974bbf570 \
+    --hash=sha256:7a0f21a39fa6c1c4bf2e5984c9b9ae944483fd10b54804cb0e23a3ccd4954f0b
     # via jupyterhub-kubespawner
 pyyaml==6.0 \
     --hash=sha256:01b45c0191e6d66c470b6cf1b9531a771a83c1c4208272ead47a3ae4f2f603bf \
