@@ -16,7 +16,6 @@ _p = inflect.engine()
 
 @dataclass(frozen=True)
 class CRDParser:
-
     group: str
     """Group is the K8s API group for the custom resource.
     e.g. 'ricoberger.de'"""
