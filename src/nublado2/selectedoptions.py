@@ -46,7 +46,7 @@ class SelectedOptions:
     def reset_user_env(self) -> str:
         """String to pass in for RESET_USER_ENV variable in the lab.
 
-        This moves the user's .local, .cache, and .jupyter environments
+        This moves the user's .local, .conda .cache, and .jupyter environments
         aside.  That in turn allows getting out of the common case where
         local package installation conflicts with the RSP machinery."""
         return self._reset_user_env
