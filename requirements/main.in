@@ -16,6 +16,8 @@ ruamel.yaml
 tornado
 kubernetes-asyncio
 jupyterhub-kubespawner
+# Pin sqlalchemy to major version 1; we would need JH 3.1.1 otherwise
+sqlalchemy<2
 
 # Always pin jupyterhub to a specific version.  We don't want it to be
 # upgraded without our explicit approval, and it should be upgraded in
