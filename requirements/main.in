@@ -23,6 +23,11 @@ jupyterhub-kubespawner
 # in the JupyterHub helm chart (https://jupyterhub.github.io/helm-chart/)
 jupyterhub==3.0.0
 
+# sqlalchemy 2 breaks with jupyterhub < 3.1.1
+sqlalchemy<2
+# So does greenlet 2
+greenlet<2
+
 # Required by alembic for Python 3.8, so install it unconditionally until
 # Python 3.8 support is dropped so that we have consistent dependencies.
 importlib-metadata
